@@ -87,7 +87,7 @@ export default function Home() {
   );
 }
 
-// 🧠 Inline Styling (JS Object Style)
+//Inline Styling (JS Object Style)
 const styles = {
   page: {
     fontFamily: "'Inter', 'Segoe UI', Roboto, sans-serif",
