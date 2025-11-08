@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from diff_engine import compute_diff
+from api.compute_diff import compute_diff
 
 app = Flask(__name__)
 CORS(app)
