@@ -20,7 +20,7 @@ export default function Home() {
 
     // When both files are ready, call backend
     if (newContents[0] && newContents[1]) {
-      const res = await fetch("http://localhost:5000/compare", {
+      const res = await fetch("http://localhost:5000/diff", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ file1: newContents[0], file2: newContents[1] }),
