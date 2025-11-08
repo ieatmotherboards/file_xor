@@ -1,5 +1,6 @@
 // src/pages/MergePage.jsx
 import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   applyBlockLeft,
@@ -8,8 +9,29 @@ import {
 } from "../utils/MergeEngine";
 import "../styles/MergeEngine.css";
 
-export default function MergePage({ fileA = "", fileB = "", blocks = [] }) {
+export default function MergePage() {
+  const location = useLocation();
+  const { fileA, fileB, blocks } = location.state || {
+    fileA: "print('Hello from file A')\nprint('Goodbye A')",
+    fileB: "print('Hello from file B')\nprint('Goodbye B!')",
+    blocks: [
+      {
+        id: "test1",
+        kind: "replace",
+        a: { start: 0, end: 26, text: "print('Hello from file A')" },
+        b: { start: 0, end: 26, text: "print('Hello from file B')" },
+      },
+      {
+        id: "test2",
+        kind: "replace",
+        a: { start: 27, end: 44, text: "print('Goodbye A')" },
+        b: { start: 27, end: 45, text: "print('Goodbye B!')" },
+      },
+    ],
+  };
+
   const [state, setState] = useState(initializeMergedState(fileA));
+  const [hoveredId, setHoveredId] = useState(null);
   const [selected, setSelected] = useState(null);
 
   const handleAccept = (block, side) => {
@@ -22,87 +44,78 @@ export default function MergePage({ fileA = "", fileB = "", blocks = [] }) {
   };
 
   return (
-    <div className="merge-container">
-      {/* Left File */}
-      <div className={`merge-pane ${selected === "left" ? "focused" : ""}`}>
-        {blocks.map((b) => (
-          <motion.div
-            layout
-            key={b.id + "-a"}
-            className={`code-block ${
-              state.appliedBlocks.has(b.id) ? "accepted" : ""
-            }`}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setSelected({ side: "left", block: b })}
-          >
-            <pre>{b.a.text}</pre>
-          </motion.div>
-        ))}
+    <div className="merge-root">
+      {/* Placeholder navbar */}
+      <header className="merge-navbar">FILE XOR</header>
+
+      <div className="merge-container">
+        {/* LEFT */}
+        <div className="merge-pane left-pane">
+          {blocks.map((b) => (
+            <motion.div
+              key={b.id + "-a"}
+              layout
+              className={`chunk ${state.appliedBlocks.has(b.id) ? "accepted" : ""} ${
+                hoveredId === b.id ? "hovered" : ""
+              }`}
+              onHoverStart={() => setHoveredId(b.id)}
+              onHoverEnd={() => setHoveredId(null)}
+              onClick={() => setSelected({ side: "left", block: b })}
+            >
+              <pre>{b.a.text}</pre>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* MERGED OUTPUT */}
+        <motion.div layout className="merge-output">
+          <pre>{state.mergedText}</pre>
+        </motion.div>
+
+        {/* RIGHT */}
+        <div className="merge-pane right-pane">
+          {blocks.map((b) => (
+            <motion.div
+              key={b.id + "-b"}
+              layout
+              className={`chunk ${state.appliedBlocks.has(b.id) ? "accepted" : ""} ${
+                hoveredId === b.id ? "hovered" : ""
+              }`}
+              onHoverStart={() => setHoveredId(b.id)}
+              onHoverEnd={() => setHoveredId(null)}
+              onClick={() => setSelected({ side: "right", block: b })}
+            >
+              <pre>{b.b.text}</pre>
+            </motion.div>
+          ))}
+        </div>
       </div>
 
-      {/* Center Merged Output */}
-      <motion.div
-        layout
-        className={`merge-output ${selected ? "blur-bg" : ""}`}
-        transition={{ duration: 0.3 }}
-      >
-        <pre>{state.mergedText}</pre>
-      </motion.div>
-
-      {/* Right File */}
-      <div className={`merge-pane ${selected === "right" ? "focused" : ""}`}>
-        {blocks.map((b) => (
-          <motion.div
-            layout
-            key={b.id + "-b"}
-            className={`code-block ${
-              state.appliedBlocks.has(b.id) ? "accepted" : ""
-            }`}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setSelected({ side: "right", block: b })}
-          >
-            <pre>{b.b.text}</pre>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Focus overlay when selecting a block */}
+      {/* SLIDE-UP SELECTION BAR */}
       <AnimatePresence>
         {selected && (
           <motion.div
-            className="overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={() => setSelected(null)}
+            className="selection-bar"
+            initial={{ y: 100 }}
+            animate={{ y: 0 }}
+            exit={{ y: 100 }}
+            transition={{ type: "spring", stiffness: 200, damping: 20 }}
           >
-            <motion.div
-              className="popup"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 260, damping: 20 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3>Choose which version to keep:</h3>
-              <div className="popup-buttons">
-                <button
-                  className="accept-left"
-                  onClick={() => handleAccept(selected.block, "left")}
-                >
-                  Accept Left
-                </button>
-                <button
-                  className="accept-right"
-                  onClick={() => handleAccept(selected.block, "right")}
-                >
-                  Accept Right
-                </button>
-              </div>
-            </motion.div>
+            <p>Choose which version to keep</p>
+            <div className="bar-buttons">
+              <button
+                className="accept-left"
+                onClick={() => handleAccept(selected.block, "left")}
+              >
+                Accept Left
+              </button>
+              <button
+                className="accept-right"
+                onClick={() => handleAccept(selected.block, "right")}
+              >
+                Accept Right
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
