@@ -1,9 +1,32 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from diff_engine import compute_diff
+from flask_sqlalchemy import SQLAlchemy
+from api.compute_diff import compute_diff
 
 app = Flask(__name__)
 CORS(app)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///myapp.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(255), unique=True, nullable=False)
+    password = db.Column(db.String(255), unique=False, nullable=False)
+    records = db.relationship('Record', backref='user', lazy=True)
+
+class Record(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    # author = db.Column(db.String(255), unique=False, nullable=False)
+    file_a = db.Column(db.String(255), unique=False, nullable=False)
+    file_b = db.Column(db.String(255), unique=False, nullable=False)
+    merge = db.Column(db.String(255), unique=False, nullable=True)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+# --- INITIALIZE DB ---
+with app.app_context():
+    db.create_all()
 
 @app.route("/diff", methods=["POST"])
 def diff_files():
@@ -21,16 +44,3 @@ def diff_files():
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
-from flask import Flask, jsonify, request
-from flask_cors import CORS
-
-app = Flask(__name__)
-CORS(app)
-
-@app.route('/api/find_diff', methods=['POST'])
-def find_differences():
-    # call function to find differences in file and send back JSON
-    pass
-
-if __name__ == "__main__":
-    app.run(debug=True)
