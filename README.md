@@ -1,1 +1,1 @@
-This is a web app used to dynamically identify the differences between to files
+This is a web app used to dynamically identify the differences between two files
