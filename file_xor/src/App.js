@@ -3,6 +3,7 @@ import logo from './logo.svg';
 import './App.css';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import Home from "./home/Home.js"
+import Merges from "./merges/Merges.js"
 
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
     <Router>
       <Routes>
         <Route path ="/" element ={<Home />} />
+        <Route path = "/merges" element = {<Merges />} />
       </Routes>
     </Router>
   );

@@ -2,3 +2,6 @@ flask
 flask-cors
 python-multipart
 diff-match-patch
+flask_cors
+flask_sqlalchemy
+diff_engine
