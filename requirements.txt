@@ -1,0 +1,4 @@
+flask
+flask-cors
+python-multipart
+diff-match-patch
