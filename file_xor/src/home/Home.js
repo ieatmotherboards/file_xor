@@ -9,24 +9,45 @@ export default function Home() {
     const file = e.target.files[0];
     if (!file) return;
 
-    const text = await file.text();
+    // Save file name locally
     const newNames = [...fileNames];
-    const newContents = [...fileContents];
     newNames[index] = file.name;
-    newContents[index] = text;
-
     setFileNames(newNames);
+
+    // Save file itself locally
+    const newContents = [...fileContents];
+    newContents[index] = file;
     setFileContents(newContents);
 
-    // When both files are ready, call backend
+    // When both files are ready, send to backend
     if (newContents[0] && newContents[1]) {
-      const res = await fetch("http://localhost:5000/diff", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file1: newContents[0], file2: newContents[1] }),
-      });
-      const data = await res.json();
-      setDiffHTML(data.diff_html);
+      const formData = new FormData();
+      formData.append("file1", newContents[0]);
+      formData.append("file2", newContents[1]);
+
+      try {
+        const res = await fetch("http://localhost:5000/diff", {
+          method: "POST",
+          body: formData, // FormData automatically sets the correct headers
+        });
+
+        const data = await res.json();
+
+        let html = "";
+        data.blocks.forEach((block) => {
+          if (block.kind === "insert") {
+            html += `<span style="background:#dcfce7">${block.b.text}</span>`;
+          } else if (block.kind === "delete") {
+            html += `<span style="background:#fee2e2;text-decoration:line-through">${block.a.text}</span>`;
+          } else {
+            html += `<span>${block.a.text}</span>`;
+          }
+        });
+        setDiffHTML(html);
+      } catch (err) {
+        setDiffHTML("Error fetching diff from server.");
+        console.error(err);
+      }
     }
   };
 
