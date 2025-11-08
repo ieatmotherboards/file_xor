@@ -1,4 +1,8 @@
-/* ============ GLOBAL THEME ============ */
+/* ================================
+   FILE XOR — Dark Modern UI Theme
+   ================================ */
+
+/* --- Base structure --- */
 .merge-root {
   background-color: #1e1e1e;
   color: #dcdcdc;
@@ -8,7 +12,7 @@
   font-family: "JetBrains Mono", monospace;
 }
 
-/* NAVBAR */
+/* --- Navbar --- */
 .merge-navbar {
   height: 48px;
   background: #2c2c2c;
@@ -21,7 +25,7 @@
   letter-spacing: 0.5px;
 }
 
-/* GRID LAYOUT */
+/* --- Layout Grid --- */
 .merge-container {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -31,7 +35,7 @@
   overflow: hidden;
 }
 
-/* PANES */
+/* --- Code Panes --- */
 .merge-pane,
 .merge-output {
   background: #252526;
@@ -41,42 +45,92 @@
   overflow-y: auto;
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
+
 .merge-output {
   border: 1px dashed #555;
 }
 
-/* CHUNKS */
+/* --- Code Block Chunks --- */
 .chunk {
+  position: relative;
   background: #2d2d2d;
   border-radius: 8px;
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 0.75rem;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.9rem;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border 0.25s ease;
   cursor: pointer;
   border-left: 3px solid #3a3a3a;
 }
-.chunk:hover,
+
+/* Hover linking effect (both sides pulse) */
 .chunk.hovered {
   transform: scale(1.02);
-  box-shadow: 0 0 10px rgba(0, 150, 255, 0.3);
+  box-shadow: 0 0 12px rgba(0, 150, 255, 0.35);
   border-left-color: #0090ff;
-  background: #333;
+  background: #333333;
+  z-index: 2;
 }
 
-/* Cross-highlight counterpart */
+/* Accepted states */
+.chunk.accepted {
+  opacity: 0.85;
+  background: #2a2a2a;
+  border-left-color: #888;
+}
+
+/* Smooth linked hover glow (cross-highlight effect) */
 .left-pane .chunk.hovered {
-  border-left-color: #00aaff;
+  border-left-color: #4fc3f7; /* blueish */
 }
 .right-pane .chunk.hovered {
-  border-left-color: #ffaa00;
+  border-left-color: #ffb74d; /* orangeish */
 }
 
-/* Accepted (greyed) */
-.chunk.accepted {
-  opacity: 0.5;
+/* --- Code styling & line numbers --- */
+pre {
+  font-size: 0.85rem;
+  line-height: 1.3;
+  margin: 0;
+  overflow-x: auto;
 }
 
-/* SLIDE-UP SELECTION BAR */
+.line-number {
+  display: inline-block;
+  width: 2em;
+  user-select: none;
+  opacity: 0.4;
+  text-align: right;
+  margin-right: 1em;
+  color: #858585;
+}
+
+.code-line {
+  display: inline-block;
+  width: calc(100% - 3em);
+}
+
+/* --- Accept / Reject Indicators --- */
+.choice-icon {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  opacity: 0.85;
+}
+.choice-icon.left {
+  color: #6aff6a; /* green check */
+}
+.choice-icon.right {
+  color: #ff6a6a; /* red X */
+}
+.choice-icon:hover {
+  transform: scale(1.15);
+  opacity: 1;
+}
+
+/* --- Slide-up decision bar --- */
 .selection-bar {
   position: fixed;
   bottom: 0;
@@ -90,6 +144,7 @@
   gap: 0.5rem;
   padding: 0.8rem 0;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.4);
+  z-index: 10;
 }
 
 .selection-bar p {
@@ -126,4 +181,161 @@
 .accept-left:hover,
 .accept-right:hover {
   transform: scale(1.05);
+}
+
+/* Enable depth illusion */
+.perspective {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+/* Choice badges:
+   - .chosen shows as bright ✔
+   - .idle shows as faint ○
+   - .mirror positions the secondary badge lower to avoid overlap
+*/
+.choice-icon {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  opacity: 0.9;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.choice-icon.mirror {
+  top: 26px;
+  opacity: 0.6;
+}
+
+.choice-icon.chosen { color: #6aff6a; }  /* green */
+.choice-icon.idle   { color: #8a8a8a; }  /* muted */
+
+.flyer {
+  position: fixed;
+  top: 20vh;            /* starting band; tweaked for your layout */
+  width: 28vw;          /* looks “chunk sized” while flying */
+  z-index: 40;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,0.45));
+}
+.flyer.left  { left: 4vw; }   /* launch from left third */
+.flyer.right { right: 4vw; }  /* launch from right third */
+
+/* --- Badge for chosen side --- */
+.choice-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  opacity: 0.9;
+}
+.choice-badge.check {
+  color: #6aff6a;
+}
+.choice-badge.cross {
+  color: #ff4d4d;
+}
+
+/* --- Smooth motion & fly-to-merge animation tweaks --- */
+.perspective {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+.fly-anim {
+  position: fixed;
+  top: 20vh;
+  width: 28vw;
+  height: auto;
+  z-index: 99;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.4));
+  pointer-events: none;
+}
+
+.fly-anim.left {
+  left: 4vw;
+}
+
+.fly-anim.right {
+  right: 4vw;
+}
+
+/* Accordion for decided changes */
+.decided-wrap {
+  padding: 0.5rem 1rem 0;
+}
+.decided-toggle {
+  background: #2c2c2c;
+  color: #dcdcdc;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.decided-panel {
+  margin-top: 0.5rem;
+  background: #262626;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+}
+.decided-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  border-bottom: 1px solid #333;
+  padding: 0.4rem 0;
+}
+.decided-row:last-child {
+  border-bottom: none;
+}
+.decided-tag {
+  color: #89d185;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.decided-preview {
+  color: #c8c8c8;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+/* Persistent focus style for selected chunk */
+.chunk.focused {
+  box-shadow: 0 0 14px rgba(0, 150, 255, 0.35);
+  transform: scale(1.02);
+  border-left-color: #0aa2ff;
+}
+
+/* Badge — smaller and neatly top-right */
+.choice-badge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 0.8rem;    /* smaller */
+  line-height: 1;
+  font-weight: 700;
+  transform: translateY(0); /* centered to top edge */
+}
+.choice-badge.check {
+  color: #6aff6a;
+}
+.choice-badge.cross {
+  color: #ff4d4d;
+}
+
+/* Fly clone visuals */
+.fly-clone .chunk.clone {
+  border-left-color: #0aa2ff;
+  background: #303030;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.45);
+}
+
+/* Make panes not swallow click-off globally */
+.merge-container {
+  position: relative;
 }

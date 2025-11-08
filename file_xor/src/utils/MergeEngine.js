@@ -1,59 +1,42 @@
 // MergeEngine.js
-// Core text merge logic for your merge page.
-// Pure functions only — no UI dependencies.
+// Rebuilds merged text deterministically from the original A file.
 
-export function initializeMergedState(baseText) {
+export function initializeMergedState(originalA) {
   return {
-    mergedText: baseText,
-    appliedBlocks: new Set(), // ids of accepted blocks
+    originalA,
+    mergedText: originalA,
+    choices: new Map(), // { blockId: "left" | "right" }
   };
 }
 
-/**
- * Applies a change from file1 (left).
- * currentState: { mergedText, appliedBlocks }
- * block: diff block JSON from backend
- */
-export function applyBlockLeft(currentState, block) {
-  const { mergedText, appliedBlocks } = currentState;
+export function computeMergedFromChoices(originalA, blocks, choices) {
+  const ordered = [...blocks].sort((a, b) => a.a.start - b.a.start);
+  let result = "";
+  let cursor = 0;
 
-  if (appliedBlocks.has(block.id)) return currentState; // already applied
-
-  const before = mergedText.slice(0, block.a.start);
-  const after = mergedText.slice(block.a.end);
-  const newMerged = before + block.a.text + after;
-
-  return {
-    mergedText: newMerged,
-    appliedBlocks: new Set([...appliedBlocks, block.id]),
-  };
+  for (const b of ordered) {
+    result += originalA.slice(cursor, b.a.start);
+    const pick = choices.get(b.id);
+    if (pick === "left") result += b.a.text;
+    else if (pick === "right") result += b.b.text;
+    else result += originalA.slice(b.a.start, b.a.end);
+    cursor = b.a.end;
+  }
+  result += originalA.slice(cursor);
+  return result;
 }
 
-/**
- * Applies a change from file2 (right).
- */
-export function applyBlockRight(currentState, block) {
-  const { mergedText, appliedBlocks } = currentState;
-
-  if (appliedBlocks.has(block.id)) return currentState;
-
-  const before = mergedText.slice(0, block.b.start);
-  const after = mergedText.slice(block.b.end);
-  const newMerged = before + block.b.text + after;
-
+export function applyChoice(state, blocks, block, side) {
+  const nextChoices = new Map(state.choices);
+  nextChoices.set(block.id, side);
+  const mergedText = computeMergedFromChoices(
+    state.originalA,
+    blocks,
+    nextChoices
+  );
   return {
-    mergedText: newMerged,
-    appliedBlocks: new Set([...appliedBlocks, block.id]),
+    ...state,
+    mergedText,
+    choices: nextChoices,
   };
-}
-
-/**
- * Undo a change (optional)
- */
-export function undoBlock(currentState, blockId) {
-  const { mergedText, appliedBlocks } = currentState;
-  const newApplied = new Set(appliedBlocks);
-  newApplied.delete(blockId);
-  // (for simplicity, doesn’t revert the merged text — you can recompute)
-  return { mergedText, appliedBlocks: newApplied };
 }
