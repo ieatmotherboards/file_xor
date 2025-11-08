@@ -1,196 +1,178 @@
 import React, { useState } from "react";
+import { diff_match_patch } from "diff-match-patch";
 
 export default function Home() {
   const [fileNames, setFileNames] = useState(["", ""]);
-  const [fileContents, setFileContents] = useState(["", ""]);
-  const [diffHTML, setDiffHTML] = useState("Upload two files to see the difference...");
+  const [fileTextPreview, setFileTextPreview] = useState(["", ""]);
+  const [diffLines, setDiffLines] = useState([]);
 
   const handleFileUpload = async (e, index) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Save file name locally
     const newNames = [...fileNames];
     newNames[index] = file.name;
     setFileNames(newNames);
 
-    // Save file itself locally
-    const newContents = [...fileContents];
-    newContents[index] = file;
-    setFileContents(newContents);
+    const text = await file.text();
+    const newPreviews = [...fileTextPreview];
+    newPreviews[index] = text;
+    setFileTextPreview(newPreviews);
 
-    // When both files are ready, send to backend
-    if (newContents[0] && newContents[1]) {
-      const formData = new FormData();
-      formData.append("file1", newContents[0]);
-      formData.append("file2", newContents[1]);
+    // Only compare when both files are loaded
+    if (newPreviews[0] && newPreviews[1]) {
+      const lines1 = newPreviews[0].split("\n");
+      const lines2 = newPreviews[1].split("\n");
+      const maxLines = Math.max(lines1.length, lines2.length);
 
-      try {
-        const res = await fetch("http://localhost:5000/diff", {
-          method: "POST",
-          body: formData, // FormData automatically sets the correct headers
+      const dmp = new diff_match_patch();
+      const lineDiffs = [];
+
+      for (let i = 0; i < maxLines; i++) {
+        const line1 = lines1[i] ?? "";
+        const line2 = lines2[i] ?? "";
+
+        // Compare word by word instead of by full line
+        const diffs = dmp.diff_main(line1, line2);
+        dmp.diff_cleanupSemantic(diffs);
+
+        const renderFile1 = diffs.map(([op, data], idx) => {
+          if (op === -1)
+            return (
+              <span key={idx} style={{ backgroundColor: "#d1fae5" }}>
+                {data}
+              </span>
+            ); // removed (green)
+          if (op === 0)
+            return (
+              <span key={idx} style={{ backgroundColor: "transparent" }}>
+                {data}
+              </span>
+            ); // unchanged
+          return null; // skip additions for file1
         });
 
-        const data = await res.json();
-
-        let html = "";
-        data.blocks.forEach((block) => {
-          if (block.kind === "insert") {
-            html += `<span style="background:#dcfce7">${block.b.text}</span>`;
-          } else if (block.kind === "delete") {
-            html += `<span style="background:#fee2e2;text-decoration:line-through">${block.a.text}</span>`;
-          } else {
-            html += `<span>${block.a.text}</span>`;
-          }
+        const renderFile2 = diffs.map(([op, data], idx) => {
+          if (op === 1)
+            return (
+              <span key={idx} style={{ backgroundColor: "#fee2e2" }}>
+                {data}
+              </span>
+            ); // added (red)
+          if (op === 0)
+            return (
+              <span key={idx} style={{ backgroundColor: "transparent" }}>
+                {data}
+              </span>
+            ); // unchanged
+          return null; // skip deletions for file2
         });
-        setDiffHTML(html);
-      } catch (err) {
-        setDiffHTML("Error fetching diff from server.");
-        console.error(err);
+
+        lineDiffs.push({
+          line: i + 1,
+          file1: renderFile1,
+          file2: renderFile2,
+        });
       }
+
+      setDiffLines(lineDiffs);
     }
   };
 
   return (
     <div style={styles.page}>
-      <h1 style={styles.title}>LiveDiff</h1>
-      <p style={styles.subtitle}>Compare two files instantly with a simple, friendly interface.</p>
+      <h1 style={styles.title}>File XOR</h1>
+      <p style={styles.subtitle}>
+        Compare two files instantly with a simple, friendly interface.
+      </p>
 
+      {/* Upload Section */}
       <div style={styles.uploadContainer}>
-        {/* Upload Section 1 */}
-        <div
-          style={styles.uploadSection}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#f9fafb")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}
-        >
-          <label htmlFor="file1" style={styles.uploadLabel}>
-            Upload File 1
-          </label>
-          <input
-            id="file1"
-            type="file"
-            accept=".txt,.py,.js,.html,.css,.json"
-            style={styles.fileInput}
-            onChange={(e) => handleFileUpload(e, 0)}
-          />
-          <div style={styles.fileName}>{fileNames[0]}</div>
-        </div>
-
-        {/* Divider */}
-        <div style={styles.divider}></div>
-
-        {/* Upload Section 2 */}
-        <div
-          style={styles.uploadSection}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#f9fafb")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}
-        >
-          <label htmlFor="file2" style={styles.uploadLabel}>
-            Upload File 2
-          </label>
-          <input
-            id="file2"
-            type="file"
-            accept=".txt,.py,.js,.html,.css,.json"
-            style={styles.fileInput}
-            onChange={(e) => handleFileUpload(e, 1)}
-          />
-          <div style={styles.fileName}>{fileNames[1]}</div>
-        </div>
+        {["File 1", "File 2"].map((label, idx) => (
+          <div key={idx} style={styles.uploadSection}>
+            <label htmlFor={`file${idx}`} style={styles.uploadLabel}>
+              Upload {label}
+            </label>
+            <input
+              id={`file${idx}`}
+              type="file"
+              accept=".txt,.py,.js,.html,.css,.json"
+              style={styles.fileInput}
+              onChange={(e) => handleFileUpload(e, idx)}
+            />
+            <div style={styles.fileName}>{fileNames[idx]}</div>
+          </div>
+        ))}
       </div>
 
-      <div
-        id="diff-output"
-        style={styles.diffOutput}
-        dangerouslySetInnerHTML={{ __html: diffHTML }}
-      />
+      {/* Original File Previews */}
+      {fileTextPreview[0] && fileTextPreview[1] && (
+        <div style={styles.previewContainer}>
+          {fileTextPreview.map((text, idx) => (
+            <div key={idx} style={styles.previewSection}>
+              <h4 style={styles.previewTitle}>File {idx + 1} Preview</h4>
+              <pre style={styles.previewBox}>{text}</pre>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Line-by-Line Diff */}
+      <div style={styles.diffTableContainer}>
+        <table style={styles.diffTable}>
+          <thead>
+            <tr>
+              <th>Line</th>
+              <th>File 1</th>
+              <th>File 2</th>
+            </tr>
+          </thead>
+          <tbody>
+            {diffLines.map((line) => (
+              <tr key={line.line}>
+                <td style={styles.lineNumber}>{line.line}</td>
+                <td style={styles.diffCell}>{line.file1}</td>
+                <td style={styles.diffCell}>{line.file2}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
-//Inline Styling (JS Object Style)
 const styles = {
   page: {
-    fontFamily: "'Inter', 'Segoe UI', Roboto, sans-serif",
-    background: "linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)",
-    color: "#333",
+    fontFamily: "'Inter', sans-serif",
+    padding: "40px 20px",
+    minHeight: "100vh",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    justifyContent: "flex-start",
-    minHeight: "100vh",
-    padding: "40px 20px",
-    transition: "all 0.3s ease-in-out",
+    background: "linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)",
   },
-  title: {
-    fontSize: "2.2rem",
-    fontWeight: 600,
-    color: "#1e293b",
-    marginBottom: "10px",
-  },
-  subtitle: {
-    color: "#64748b",
-    marginBottom: "40px",
-    fontSize: "1rem",
-  },
+  title: { fontSize: "2.2rem", fontWeight: 600, marginBottom: "10px", textAlign: "center" },
+  subtitle: { marginBottom: "40px", textAlign: "center", color: "#64748b" },
   uploadContainer: {
     display: "flex",
-    flexWrap: "wrap",
-    alignItems: "stretch",
-    justifyContent: "center",
-    background: "#ffffff",
+    maxWidth: "900px",
+    width: "100%",
     borderRadius: "16px",
-    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.08)",
     overflow: "hidden",
-    maxWidth: "900px",
-    width: "100%",
-    transition: "box-shadow 0.3s ease",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+    marginBottom: "20px",
   },
-  uploadSection: {
-    flex: "1 1 300px",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "40px",
-    background: "#ffffff",
-    transition: "background 0.3s ease, transform 0.2s ease",
-  },
-  uploadLabel: {
-    background: "#3b82f6",
-    color: "white",
-    padding: "12px 24px",
-    borderRadius: "8px",
-    fontWeight: 500,
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-  },
-  fileInput: {
-    display: "none",
-  },
-  fileName: {
-    marginTop: "15px",
-    fontSize: "0.95rem",
-    color: "#374151",
-    wordBreak: "break-word",
-    animation: "fadeIn 0.3s ease",
-  },
-  divider: {
-    width: "2px",
-    background:
-      "repeating-linear-gradient(to bottom, #d1d5db, #d1d5db 4px, transparent 4px, transparent 8px)",
-  },
-  diffOutput: {
-    marginTop: "40px",
-    background: "#ffffff",
-    borderRadius: "12px",
-    padding: "20px",
-    width: "100%",
-    maxWidth: "900px",
-    boxShadow: "0 2px 10px rgba(0, 0, 0, 0.06)",
-    minHeight: "150px",
-    overflowX: "auto",
-    fontFamily: "'JetBrains Mono', monospace",
-    transition: "all 0.3s ease",
-  },
+  uploadSection: { flex: "1 1 300px", padding: "40px", display: "flex", flexDirection: "column", alignItems: "center", background: "#ffffff" },
+  uploadLabel: { background: "#3b82f6", color: "white", padding: "12px 24px", borderRadius: "8px", cursor: "pointer", fontWeight: 500 },
+  fileInput: { display: "none" },
+  fileName: { marginTop: "15px", fontSize: "0.95rem", color: "#374151", textAlign: "center" },
+  previewContainer: { display: "flex", maxWidth: "900px", width: "100%", gap: "20px", marginBottom: "20px" },
+  previewSection: { flex: "1 1 300px", display: "flex", flexDirection: "column" },
+  previewTitle: { marginBottom: "10px", fontSize: "1rem", textAlign: "center" },
+  previewBox: { background: "#f3f4f6", padding: "15px", borderRadius: "8px", overflowX: "auto", whiteSpace: "pre-wrap", maxHeight: "300px" },
+  diffTableContainer: { maxWidth: "900px", width: "100%", overflowX: "auto" },
+  diffTable: { width: "100%", borderCollapse: "collapse", textAlign: "center" },
+  lineNumber: { width: "40px", textAlign: "center", fontWeight: 600, background: "#f3f4f6" },
+  diffCell: { textAlign: "center", whiteSpace: "pre-wrap" },
 };
