@@ -9,6 +9,7 @@ export default function Home() {
   const [darkMode, setDarkMode] = useState(false);
   const [animationDone, setAnimationDone] = useState(false);
   const [showDiffButton, setShowDiffButton] = useState(false); // NEW
+  const diffContainerRef = useRef(null);
 
   const timeoutsRef = useRef([]);
   const mergeTimerRef = useRef(null);
@@ -67,7 +68,7 @@ export default function Home() {
       const renderFile1 = diffs.map(([op, data], idx) => {
         if (op === -1)
           return (
-            <span key={idx} style={{ backgroundColor: "#d1fae5" }}>
+            <span key={idx} style={theme.diffAdded}>
               {data}
             </span>
           );
@@ -78,7 +79,7 @@ export default function Home() {
       const renderFile2 = diffs.map(([op, data], idx) => {
         if (op === 1)
           return (
-            <span key={idx} style={{ backgroundColor: "#fee2e2" }}>
+            <span key={idx} style={theme.diffRemoved}>
               {data}
             </span>
           );
@@ -117,6 +118,14 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    // Scroll the page to bottom smoothly when a new line is added
+    window.scrollTo({
+      top: document.body.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [diffLines]);
+
   const fileLabel = (idx) => fileNames[idx] || `File ${idx + 1}`;
   const filePreviewTitle = (idx) => `${fileNames[idx] || `File ${idx + 1}`} Preview`;
 
@@ -127,7 +136,7 @@ export default function Home() {
       {/* Centered header */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
         <h1 style={theme.title}>FILE_XOR</h1>
-        <button style={theme.toggleButton} onClick={() => setDarkMode(!darkMode)}>
+        <button style={theme.toggleButton} className="upload-button bounce-in" onClick={() => setDarkMode(!darkMode)}>
           {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
         </button>
       </div>
@@ -195,8 +204,8 @@ export default function Home() {
       )}
 
       {/* Diff Table */}
-      <div style={theme.diffTableContainer}>
-        <table style={theme.diffTable}>
+      <div style={theme.diffTableContainer} ref={diffContainerRef}>
+        <table style={theme.diffTable} className="diff-table">
           <thead>
             <tr>
               <th>Line</th>
@@ -289,6 +298,35 @@ export default function Home() {
             animation: fadeInXor 2s 1s forwards, pulseMerge 0.6s 2.8s ease-in-out;
           }
           .merged { opacity: 0; }
+
+          .toggle-button {
+            animation-delay: 0.3s; /* optional delay */
+          }
+
+          .diff-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: auto; /* let the browser calculate widths */
+            }
+
+            .diff-table th,
+            .diff-table td {
+            padding: 8px;
+            vertical-align: top;
+            }
+
+            .diff-table th:first-child,
+            .diff-table td:first-child {
+            width: 50px; /* fixed width for line numbers */
+            }
+
+            .diff-table th:nth-child(2),
+            .diff-table td:nth-child(2),
+            .diff-table th:nth-child(3),
+            .diff-table td:nth-child(3) {
+            width: calc((100% - 50px) / 2); /* split remaining width evenly */
+            word-break: break-word;          /* wrap long lines */
+            }
 
           @keyframes slideInLeft {
             0% { transform: translateX(-200px); opacity: 0; }
@@ -385,30 +423,47 @@ const lightTheme = {
     overflowX: "auto",
     whiteSpace: "pre-wrap",
   },
-  diffTableContainer: { maxWidth: "900px", width: "100%", overflowX: "auto" },
-  diffTable: { width: "100%", borderCollapse: "collapse" },
-  lineNumber: {
-    width: "40px",
-    fontWeight: 600,
-    background: "#f3f4f6",
+  diffTableContainer: { 
+    maxWidth: "900px", 
+    width: "100%", 
+    maxHeight: "400px",      // limit height so vertical scrolling works
+    overflowY: "auto",       // enable vertical scrolling
+    overflowX: "auto",       // keep horizontal scrolling
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+    padding: "10px",
+    background: "#f9fafb"
   },
-  diffCell: { whiteSpace: "pre-wrap" },
 };
 
 const darkTheme = {
   ...lightTheme,
   page: {
     ...lightTheme.page,
-    background: "linear-gradient(135deg, #1f2937 0%, #111827 100%)",
-    color: "#f9fafb",
+    background: "linear-gradient(135deg, #121212 0%, #1e1e2f 100%)", // darker gradient for contrast
+    color: "#e0e0e0", // softer white for text
   },
-  uploadSection: { ...lightTheme.uploadSection, background: "#1f2937" },
-  uploadLabel: { ...lightTheme.uploadLabel, background: "#2563eb" },
+  uploadSection: { ...lightTheme.uploadSection, background: "#1e1e2f" },
+  uploadLabel: { ...lightTheme.uploadLabel, background: "#3b82f6", color: "#ffffff" },
   previewBox: {
     ...lightTheme.previewBox,
-    background: "#111827",
-    border: "1px solid #374151",
-    color: "#f9fafb",
+    background: "#1b1b2a", // slightly darker preview box
+    border: "1px solid #33334d",
+    color: "#e0e0e0",
   },
-  lineNumber: { ...lightTheme.lineNumber, background: "#374151", color: "#f9fafb" },
+  diffTableContainer: {
+    ...lightTheme.diffTableContainer,
+    background: "#1b1b2a",
+    border: "1px solid #33334d",
+  },
+  lineNumber: {
+    background: "#2a2a3d",
+    color: "#c0c0c0",
+  },
+  diffCell: {
+    background: "#1b1b2a",
+    color: "#e0e0e0",
+  },
+  diffAdded: { backgroundColor: "#064e3b", color: "#a7f3d0" }, // green for removed lines
+  diffRemoved: { backgroundColor: "#581c1c", color: "#fecaca" }, // red for added lines
 };
