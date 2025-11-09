@@ -1,12 +1,29 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { diff_match_patch } from "diff-match-patch";
 
 export default function Home() {
   const [fileNames, setFileNames] = useState(["", ""]);
   const [fileTextPreview, setFileTextPreview] = useState(["", ""]);
-  const [fullDiffLines, setFullDiffLines] = useState([]); // Full diff
-  const [diffLines, setDiffLines] = useState([]); // Animated diff
+  const [fullDiffLines, setFullDiffLines] = useState([]);
+  const [diffLines, setDiffLines] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
+  const [animationDone, setAnimationDone] = useState(false);
+  const [showDiffButton, setShowDiffButton] = useState(false); // NEW
+
+  const timeoutsRef = useRef([]);
+  const mergeTimerRef = useRef(null);
+
+  const clearPendingLineTimeouts = () => {
+    if (timeoutsRef.current.length) {
+      timeoutsRef.current.forEach((id) => clearTimeout(id));
+      timeoutsRef.current = [];
+    }
+  };
+
+  const resetAnimationState = () => {
+    clearPendingLineTimeouts();
+    setDiffLines([]);
+  };
 
   const handleFileUpload = async (e, index) => {
     const file = e.target.files[0];
@@ -21,63 +38,87 @@ export default function Home() {
     newPreviews[index] = text;
     setFileTextPreview(newPreviews);
 
+    // Show "View Differences!" button when both files are uploaded
     if (newPreviews[0] && newPreviews[1]) {
-      const lines1 = newPreviews[0].split("\n");
-      const lines2 = newPreviews[1].split("\n");
-      const maxLines = Math.max(lines1.length, lines2.length);
-
-      const dmp = new diff_match_patch();
-      const lineDiffs = [];
-
-      for (let i = 0; i < maxLines; i++) {
-        const line1 = lines1[i] ?? "";
-        const line2 = lines2[i] ?? "";
-        const diffs = dmp.diff_main(line1, line2);
-        dmp.diff_cleanupSemantic(diffs);
-
-        const renderFile1 = diffs.map(([op, data], idx) => {
-          if (op === -1)
-            return (
-              <span key={idx} style={{ backgroundColor: "#d1fae5" }}>
-                {data}
-              </span>
-            );
-          if (op === 0) return <span key={idx}>{data}</span>;
-          return null;
-        });
-
-        const renderFile2 = diffs.map(([op, data], idx) => {
-          if (op === 1)
-            return (
-              <span key={idx} style={{ backgroundColor: "#fee2e2" }}>
-                {data}
-              </span>
-            );
-          if (op === 0) return <span key={idx}>{data}</span>;
-          return null;
-        });
-
-        lineDiffs.push({ line: i + 1, file1: renderFile1, file2: renderFile2 });
-      }
-
-      setFullDiffLines(lineDiffs);
+      setShowDiffButton(true);
+      setFullDiffLines([]);
+      resetAnimationState();
     }
   };
 
-  // Animate diff lines one by one safely
+  const handleViewDifferences = () => {
+    setShowDiffButton(false);
+    resetAnimationState();
+    setFullDiffLines([]);
+
+    const lines1 = fileTextPreview[0].split("\n");
+    const lines2 = fileTextPreview[1].split("\n");
+    const maxLines = Math.max(lines1.length, lines2.length);
+
+    const dmp = new diff_match_patch();
+    const lineDiffs = [];
+
+    for (let i = 0; i < maxLines; i++) {
+      const line1 = lines1[i] ?? "";
+      const line2 = lines2[i] ?? "";
+      const diffs = dmp.diff_main(line1, line2);
+      dmp.diff_cleanupSemantic(diffs);
+
+      const renderFile1 = diffs.map(([op, data], idx) => {
+        if (op === -1)
+          return (
+            <span key={idx} style={{ backgroundColor: "#d1fae5" }}>
+              {data}
+            </span>
+          );
+        if (op === 0) return <span key={idx}>{data}</span>;
+        return null;
+      });
+
+      const renderFile2 = diffs.map(([op, data], idx) => {
+        if (op === 1)
+          return (
+            <span key={idx} style={{ backgroundColor: "#fee2e2" }}>
+              {data}
+            </span>
+          );
+        if (op === 0) return <span key={idx}>{data}</span>;
+        return null;
+      });
+
+      lineDiffs.push({ line: i + 1, file1: renderFile1, file2: renderFile2 });
+    }
+
+    setFullDiffLines(lineDiffs);
+  };
+
   useEffect(() => {
-  setDiffLines([]); // Reset animation
-  if (fullDiffLines.length === 0) return;
+    clearPendingLineTimeouts();
+    setDiffLines([]);
+
+    if (!fullDiffLines || fullDiffLines.length === 0) return;
 
     fullDiffLines.forEach((line, idx) => {
-      setTimeout(() => {
-        setDiffLines(prev => [...prev, line]);
-      }, 300 * idx); // 300ms per line
+      const id = setTimeout(() => {
+        setDiffLines((prev) => [...prev, line]);
+      }, idx * 300);
+      timeoutsRef.current.push(id);
     });
+
+    return () => {
+      clearPendingLineTimeouts();
+    };
   }, [fullDiffLines]);
 
-  const fileLabel = idx => fileNames[idx] || `File ${idx + 1}`;
-  const filePreviewTitle = idx => `${fileNames[idx] || `File ${idx + 1}`} Preview`;
+  useEffect(() => {
+    mergeTimerRef.current = setTimeout(() => setAnimationDone(true), 3000);
+    return () => {
+      if (mergeTimerRef.current) clearTimeout(mergeTimerRef.current);
+    };
+  }, []);
+
+  const fileLabel = (idx) => fileNames[idx] || `File ${idx + 1}`;
+  const filePreviewTitle = (idx) => `${fileNames[idx] || `File ${idx + 1}`} Preview`;
 
   const theme = darkMode ? darkTheme : lightTheme;
 
@@ -85,32 +126,30 @@ export default function Home() {
     <div style={theme.page}>
       {/* Centered header */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
-        <h1 style={theme.title}>File XOR</h1>
+        <h1 style={theme.title}>FILE_XOR</h1>
         <button style={theme.toggleButton} onClick={() => setDarkMode(!darkMode)}>
           {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
         </button>
       </div>
 
-      <p style={theme.subtitle}>
-        Compare two files instantly with a simple, friendly interface.
-      </p>
+      <p style={theme.subtitle}>Compare two files instantly with a simple, friendly interface.</p>
 
-      {/* XOR Icons */}
-      <div style={{ display: "flex", gap: "20px" }}>
+      {/* XOR Animation */}
+      <div className="xor-animation">
         <img
           src="https://cdn-icons-png.flaticon.com/512/55/55025.png"
-          alt="XOR Icon 1"
-          style={{ width: "40px", height: "40px", borderRadius: "8px" }}
+          alt="File Left"
+          className={`file-icon left ${animationDone ? "merged" : ""}`}
         />
         <img
           src="https://images.freeimages.com/clg/images/37/370032/logic-xor-symbol-clip-art_f.jpg"
-          alt="XOR Icon 2"
-          style={{ width: "40px", height: "40px", borderRadius: "8px" }}
+          alt="XOR Logo"
+          className={`xor-logo ${animationDone ? "merged" : ""}`}
         />
         <img
           src="https://cdn-icons-png.flaticon.com/512/55/55025.png"
-          alt="XOR Icon 3"
-          style={{ width: "40px", height: "40px", borderRadius: "8px" }}
+          alt="File Right"
+          className={`file-icon right ${animationDone ? "merged" : ""}`}
         />
       </div>
 
@@ -121,20 +160,14 @@ export default function Home() {
             <label htmlFor={`file${idx}`} style={theme.uploadLabel} className="upload-button">
               Upload {label}
             </label>
-            <input
-              id={`file${idx}`}
-              type="file"
-              accept=".txt,.py,.js,.html,.css,.json"
-              style={theme.fileInput}
-              onChange={e => handleFileUpload(e, idx)}
-            />
+            <input id={`file${idx}`} type="file" accept=".txt,.py,.js,.html,.css,.json" style={theme.fileInput} onChange={(e) => handleFileUpload(e, idx)} />
             <div style={theme.fileName}>{fileNames[idx] || <em>No file chosen</em>}</div>
           </div>
         ))}
       </div>
 
       {/* File Previews */}
-      {fileTextPreview[0] && fileTextPreview[1] && (
+      {(fileTextPreview[0] || fileTextPreview[1]) && (
         <div style={theme.previewContainer}>
           {fileTextPreview.map((text, idx) => (
             <div key={idx} style={theme.previewSection}>
@@ -143,6 +176,22 @@ export default function Home() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* View Differences Button (Animated) */}
+      {showDiffButton && (
+        <button
+          className="view-diff-button bounce-in"
+          style={{
+            ...theme.uploadLabel,
+            fontSize: "1.1rem",
+            marginBottom: "20px",
+            cursor: "pointer",
+          }}
+          onClick={handleViewDifferences}
+        >
+          🔍 View Differences!
+        </button>
       )}
 
       {/* Diff Table */}
@@ -156,7 +205,7 @@ export default function Home() {
             </tr>
           </thead>
           <tbody>
-            {diffLines.map(line => (
+            {diffLines.map((line) => (
               <tr key={line.line}>
                 <td style={theme.lineNumber}>{line.line}</td>
                 <td style={theme.diffCell}>{line.file1}</td>
@@ -167,8 +216,25 @@ export default function Home() {
         </table>
       </div>
 
+      {/* Merge Button */}
+      {diffLines.length > 0 && diffLines.length === fullDiffLines.length && (
+        <button
+          className="upload-button bounce-in"
+          style={{
+            ...theme.uploadLabel,
+            marginTop: "30px",
+            fontSize: "1.1rem",
+            cursor: "pointer",
+          }}
+          onClick={() => console.log("Merge clicked!")}
+        >
+          🚀 Merge!
+        </button>
+      )}
+
       <style>
         {`
+          /* Reuse upload-button hover styles */
           .upload-button {
             transition: all 0.2s ease-in-out;
           }
@@ -176,9 +242,72 @@ export default function Home() {
             transform: scale(1.08);
             box-shadow: 0 8px 16px rgba(59,130,246,0.3);
           }
-          .upload-button:active {
-            transform: scale(0.97);
-            box-shadow: 0 4px 8px rgba(59,130,246,0.2);
+
+          /* Bounce-In Animation for View Differences! */
+          .bounce-in {
+            animation: bounceIn 0.6s ease-in-out;
+          }
+          @keyframes bounceIn {
+            0% { transform: scale(0.6); opacity: 0; }
+            60% { transform: scale(1.2); opacity: 1; }
+            80% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+          }
+
+          /* XOR Animation */
+          .xor-animation {
+            position: relative;
+            height: 80px;
+            width: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+          }
+          .file-icon {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            top: 0;
+            transition: transform 2s ease-in-out, opacity 0.6s ease-in-out;
+          }
+          .file-icon.left {
+            left: 0;
+            transform: translateX(-200px);
+            animation: slideInLeft 2s forwards;
+          }
+          .file-icon.right {
+            right: 0;
+            transform: translateX(200px);
+            animation: slideInRight 2s forwards;
+          }
+          .xor-logo {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            opacity: 0;
+            animation: fadeInXor 2s 1s forwards, pulseMerge 0.6s 2.8s ease-in-out;
+          }
+          .merged { opacity: 0; }
+
+          @keyframes slideInLeft {
+            0% { transform: translateX(-200px); opacity: 0; }
+            60% { opacity: 1; }
+            100% { transform: translateX(0); opacity: 1; }
+          }
+          @keyframes slideInRight {
+            0% { transform: translateX(200px); opacity: 0; }
+            60% { opacity: 1; }
+            100% { transform: translateX(0); opacity: 1; }
+          }
+          @keyframes fadeInXor {
+            0% { opacity: 0; transform: scale(0.7); }
+            100% { opacity: 1; transform: scale(1); }
+          }
+          @keyframes pulseMerge {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
           }
         `}
       </style>
@@ -186,7 +315,7 @@ export default function Home() {
   );
 }
 
-/* ---------- LIGHT THEME ---------- */
+/* ---------- THEMES ---------- */
 const lightTheme = {
   page: {
     fontFamily: "'Inter', sans-serif",
@@ -266,7 +395,6 @@ const lightTheme = {
   diffCell: { whiteSpace: "pre-wrap" },
 };
 
-/* ---------- DARK THEME ---------- */
 const darkTheme = {
   ...lightTheme,
   page: {
