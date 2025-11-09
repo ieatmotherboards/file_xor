@@ -11,7 +11,7 @@ def create_new_account(username: str, password: str):
 
     existing = User.query.filter_by(username=username).first()
     if existing:
-        return jsonify({"error": "Username already in use"}), 409
+        return jsonify({"error": "Username already in use"}), 403
 
     hashed_pw = generate_password_hash(password)
     new_user = User(username=username, password=hashed_pw)

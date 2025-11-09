@@ -6,15 +6,19 @@ from api.auth import create_new_account, login_user
 from api.compute_diff import compute_diff
 
 app = Flask(__name__)
-CORS(app)
 
+CORS(app, 
+     resources={r"/*": {"origins": "http://localhost:3000"}},  # Your React dev server
+     supports_credentials=True,
+     allow_headers=["Content-Type"],
+     methods=["GET", "POST", "OPTIONS"])
 # --- CONFIG ---
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///myapp.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = "super-secret-key"  # change in production
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
-app.config["JWT_COOKIE_SECURE"] = True  # Only send over HTTPS
-app.config["JWT_COOKIE_SAMESITE"] = "Lax"
+app.config["JWT_COOKIE_SECURE"] = False  # False for development (HTTP), True for production (HTTPS)
+app.config["JWT_COOKIE_SAMESITE"] = "None"  # Allows cross-origin cookie sending
 app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
 
 # --- INIT ---

@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from "react-router-dom";
+
 
 export default function FileXorLanding() {
+
+  const navigate = useNavigate();
+
   const [titleVisible, setTitleVisible] = useState(false);
   const [watermarkProgress, setWatermarkProgress] = useState(0);
   const canvasRef = useRef(null);
@@ -385,6 +390,7 @@ export default function FileXorLanding() {
             e.target.style.backgroundColor = 'transparent';
             e.target.style.color = '#D1D5DB';
           }}
+         onClick={() => navigate("/create-account")} // change me
         >
           Sign Up
         </button>
@@ -398,6 +404,8 @@ export default function FileXorLanding() {
             e.target.style.backgroundColor = 'transparent';
             e.target.style.color = '#D1D5DB';
           }}
+         onClick={() => navigate("/login")} // change me
+
         >
           Login
         </button>
