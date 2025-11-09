@@ -486,11 +486,22 @@ const originalIndexMap = useMemo(
 
   // 3) reinsert into active at original index
   setActiveBlocks((prev) => {
-    const idx = originalIndexMap.get(blockId);
-    const next = [...prev];
-    const insertAt = Number.isInteger(idx) ? idx : prev.length;
-    next.splice(insertAt, 0, decided.block);
-    return next;
+  const next = [...prev];
+  const idx = originalIndexMap.get(blockId);
+
+  // find correct insertion index based on surrounding blocks still in active list
+  let insertAt = next.findIndex(b => {
+    const bIdx = originalIndexMap.get(b.id);
+    return bIdx > idx;
+  });
+
+  if (insertAt === -1) {
+    insertAt = next.length; // append if it belongs at the end
+  }
+
+  next.splice(insertAt, 0, decided.block);
+  return next;
+
   });
 
   // 4) remove the choice from engine + rebuild merged text
