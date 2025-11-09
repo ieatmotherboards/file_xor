@@ -1,32 +1,68 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
+from flask_jwt_extended import JWTManager, unset_jwt_cookies, jwt_required, get_jwt_identity
+from api.models import db, User, Record
+from api.auth import create_new_account, login_user
 from api.compute_diff import compute_diff
 
 app = Flask(__name__)
-CORS(app)
 
+CORS(app, 
+     resources={r"/*": {"origins": "http://localhost:3000"}},  # Your React dev server
+     supports_credentials=True,
+     allow_headers=["Content-Type"],
+     methods=["GET", "POST", "OPTIONS"])
+# --- CONFIG ---
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///myapp.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
+app.config['JWT_SECRET_KEY'] = "super-secret-key"  # change in production
+app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config["JWT_COOKIE_SECURE"] = False  # False for development (HTTP), True for production (HTTPS)
+app.config["JWT_COOKIE_SAMESITE"] = "None"  # Allows cross-origin cookie sending
+app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
 
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(255), unique=True, nullable=False)
-    password = db.Column(db.String(255), unique=False, nullable=False)
-    records = db.relationship('Record', backref='user', lazy=True)
-
-class Record(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    # author = db.Column(db.String(255), unique=False, nullable=False)
-    file_a = db.Column(db.String(255), unique=False, nullable=False)
-    file_b = db.Column(db.String(255), unique=False, nullable=False)
-    merge = db.Column(db.String(255), unique=False, nullable=True)
-    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+# --- INIT ---
+db.init_app(app)
+jwt = JWTManager(app)
 
 # --- INITIALIZE DB ---
 with app.app_context():
     db.create_all()
+
+
+# --- ROUTES ---
+@app.route("/create_account", methods=["POST"])
+def create_account():
+    if not request.is_json:
+        return jsonify({"error": "Request must be JSON"}), 400
+    data = request.get_json()
+    username = data.get("username")
+    password = data.get("password")
+    return create_new_account(username, password)
+
+
+@app.route("/login", methods=["POST"])
+def login():
+    if not request.is_json:
+        return jsonify({"error": "Request must be JSON"}), 400
+    data = request.get_json()
+    username = data.get("username")
+    password = data.get("password")
+    return login_user(username, password)
+
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    response = jsonify({"success": "logged out"})
+    unset_jwt_cookies(response)
+    return response, 200
+
+@app.route("/@me", methods=["GET"])
+@jwt_required()
+def at_me():
+    current_user = get_jwt_identity()
+
+    
 
 @app.route("/diff", methods=["POST"])
 def diff_files():
