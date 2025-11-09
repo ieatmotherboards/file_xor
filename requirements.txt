@@ -5,3 +5,5 @@ diff-match-patch
 flask_cors
 flask_sqlalchemy
 diff_engine
+secrets
+flask-jwt-extended
