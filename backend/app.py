@@ -4,6 +4,7 @@ from flask_jwt_extended import JWTManager, unset_jwt_cookies, jwt_required, get_
 from api.models import db, User, Record
 from api.auth import create_new_account, login_user
 from api.compute_diff import compute_diff
+from api.getmerges import get_merges
 
 app = Flask(__name__)
 
@@ -57,10 +58,16 @@ def logout():
     unset_jwt_cookies(response)
     return response, 200
 
-@app.route("/@me", methods=["GET"])
+@app.route("/verify_token", methods=["GET"])
 @jwt_required()
-def at_me():
+def verify_token():
     current_user = get_jwt_identity()
+    return jsonify({"authenticated": True, "username": current_user}), 200
+
+@app.route("/get_merges", methods=["GET"])
+@jwt_required()
+def return_merges():
+    return get_merges()
 
     
 

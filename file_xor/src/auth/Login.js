@@ -303,7 +303,8 @@ export default function Login() {
     color: '#9CA3AF',
     fontFamily: 'JetBrains Mono, monospace',
     fontSize: '14px',
-    textDecoration: 'none'
+    textDecoration: 'none',
+    cursor:"pointer"
   };
 
   return (

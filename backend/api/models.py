@@ -12,6 +12,8 @@ class User(db.Model):
 class Record(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     file_a = db.Column(db.String(255), nullable=False)
+    # file_a_path = db.Column(db.String(255), nullable=False) # 
     file_b = db.Column(db.String(255), nullable=False)
-    merge = db.Column(db.String(255), nullable=True)
+    # file_b_path = db.Column(db.String(255), nullable=False)
+    merge = db.Column(db.String(255), nullable=True) # not gonna use this
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
