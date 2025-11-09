@@ -1,9 +1,9 @@
 flask
 flask-cors
 python-multipart
-diff-match-patch
 flask_cors
 flask_sqlalchemy
-diff_engine
 secrets
 flask-jwt-extended
+diff-match-patch
+diff_engine
