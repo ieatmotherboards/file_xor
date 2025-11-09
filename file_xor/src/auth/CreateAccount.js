@@ -23,7 +23,7 @@ export default function CreateAccount() {
         }
 
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL}/create_account`, {
+            const res = await fetch('https://www-student.cse.buffalo.edu/~holdenen/create_account', {
                 method:'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',

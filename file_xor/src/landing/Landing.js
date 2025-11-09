@@ -466,7 +466,7 @@ export default function FileXorLanding() {
 
       {/* Try It Button */}
       <div style={tryItContainerStyle}>
-        <a href="/" style={{textDecoration: 'none'}}>
+        <a onClick={() => navigate("/create-account")} style={{textDecoration: 'none'}}>
           <button
             style={tryItButtonStyle}
             onMouseEnter={(e) => {

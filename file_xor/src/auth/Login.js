@@ -15,7 +15,7 @@ export default function Login() {
 
     const resolveLogin = async () => {
         try{
-            const res = await fetch(`${process.env.REACT_APP_API_URL}/login`, {
+            const res = await fetch('https://www-student.cse.buffalo.edu/~holdenen/login', {
                 method:'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',

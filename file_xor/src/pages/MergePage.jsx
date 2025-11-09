@@ -416,7 +416,7 @@ export default function MergePage() {
 
         .save-merge-btn {
           background: #2c2c2c;
-          color: #9cdcfe;
+          color: #0aa2ff;
           border: none;
           border-radius: 8px;
           padding: 0.6rem 1.2rem;
@@ -430,6 +430,13 @@ export default function MergePage() {
         }
 
         .undo-btn {
+          
+          background: #262626;
+          border: none;
+          color: #0aa2ff;
+          cursor:'pointer';
+
+          font-family: "JetBrains Mono", "Consolas", monospace;
 
         }
 
@@ -545,7 +552,7 @@ const originalIndexMap = useMemo(
       })),
     };
 
-    const res = await fetch(`${process.env.REACT_APP_API_URL}/save_merge`, {
+    const res = await fetch('https://www-student.cse.buffalo.edu/~holdenen/save_merge', {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -642,7 +649,7 @@ const originalIndexMap = useMemo(
           style={sidebarLinkStyle}
           onMouseEnter={(e) => (e.target.style.backgroundColor = '#2d2d2d')}
           onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
-          onClick={() => window.location.href = '/'}
+          onClick={() => navigate('/')}
         >
           Home
         </div>

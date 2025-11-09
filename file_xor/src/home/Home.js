@@ -23,7 +23,7 @@ export default function Home() {
             formData.append("file2", document.getElementById("file1").files[0]);
 
             // Send request to backend
-            const res = await fetch(`${process.env.REACT_APP_API_URL}/compute_diff`, {
+            const res = await fetch('https://www-student.cse.buffalo.edu/~holdenen/compute_diff', {
                 method: "POST",
                 body: formData,
                 credentials: "include", // include cookies for auth
@@ -159,7 +159,7 @@ export default function Home() {
     fullDiffLines.forEach((line, idx) => {
       const id = setTimeout(() => {
         setDiffLines((prev) => [...prev, line]);
-      }, idx * 300);
+      }, idx * 200);
       timeoutsRef.current.push(id);
     });
 

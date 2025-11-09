@@ -12,7 +12,7 @@ export default function ProtectedRoute({ children }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch(`${process.env.REACT_APP_API_URL}/verify_token`, {
+        const res = await fetch('https://www-student.cse.buffalo.edu/~holdenen/verify_token', {
           method: 'GET',
           credentials: 'include',
         });
