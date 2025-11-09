@@ -458,7 +458,7 @@ const originalIndexMap = useMemo(
       })),
     };
 
-    const res = await fetch("/save_merge", {
+    const res = await fetch(`${process.env.REACT_APP_API_URL}/save_merge`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
