@@ -1,12 +1,66 @@
 import React, { useState, useEffect, useRef } from "react";
 import { diff_match_patch } from "diff-match-patch";
+import { useNavigate } from "react-router-dom";
 
 export default function Home() {
+
+    const navigate = useNavigate();
+    
+
+    const handleMerge = async () => {
+        try {
+            if (!fileNames[0] || !fileNames[1]) {
+                alert("Please upload two files first!");
+                return;
+            }
+
+            // Create FormData and append both files
+            const formData = new FormData();
+            formData.append("file1", document.getElementById("file0").files[0]);
+            formData.append("file2", document.getElementById("file1").files[0]);
+
+            // Send request to backend
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/compute_diff`, {
+                method: "POST",
+                body: formData,
+                credentials: "include", // include cookies for auth
+            });
+
+            if (!res.ok) {
+                const text = await res.text();
+                console.error("Backend error:", text);
+                alert("Error computing differences"); // CHANGE ME THREE
+                return;
+            }
+
+            const data = await res.json();
+
+            if (!data.blocks) {
+                alert("Error computing differences (no blocks returned)"); // CHANGE ME LATER
+                return;
+            }
+
+            // Save to localStorage for merge page
+            localStorage.setItem("fileA", fileTextPreview[0]);
+            localStorage.setItem("fileB", fileTextPreview[1]);
+            localStorage.setItem("fileAName", fileNames[0]);
+            localStorage.setItem("fileBName", fileNames[1]);
+            localStorage.setItem("mergeBlocks", JSON.stringify(data.blocks));
+
+            // Navigate to merge page
+            navigate("/merge");
+            } catch (error) {
+                console.error("Failed to compute diff:", error);
+                alert("Error processing files");
+            }
+        };
+
+
   const [fileNames, setFileNames] = useState(["", ""]);
   const [fileTextPreview, setFileTextPreview] = useState(["", ""]);
   const [fullDiffLines, setFullDiffLines] = useState([]);
   const [diffLines, setDiffLines] = useState([]);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
   const [animationDone, setAnimationDone] = useState(false);
   const [showDiffButton, setShowDiffButton] = useState(false); // NEW
   const diffContainerRef = useRef(null);
@@ -137,13 +191,13 @@ export default function Home() {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
         <h1 style={theme.title}>FILE_XOR</h1>
         <button style={theme.toggleButton} className="upload-button bounce-in" onClick={() => setDarkMode(!darkMode)}>
-          {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
+          {darkMode ? "☀️ Light Mode":"🌙 Dark Mode"}
         </button>
       </div>
 
       <p style={theme.subtitle}>Compare two files instantly with a simple, friendly interface.</p>
 
-      {/* XOR Animation */}
+      {/* XOR Animation
       <div className="xor-animation">
         <img
           src="https://cdn-icons-png.flaticon.com/512/55/55025.png"
@@ -160,7 +214,7 @@ export default function Home() {
           alt="File Right"
           className={`file-icon right ${animationDone ? "merged" : ""}`}
         />
-      </div>
+      </div> */}
 
       {/* Upload Section */}
       <div style={theme.uploadContainer}>
@@ -225,21 +279,21 @@ export default function Home() {
         </table>
       </div>
 
-      {/* Merge Button */}
-      {diffLines.length > 0 && diffLines.length === fullDiffLines.length && (
+        {/* Merge Button */}
+        {diffLines.length > 0 && diffLines.length === fullDiffLines.length && (
         <button
-          className="upload-button bounce-in"
-          style={{
+            className="upload-button bounce-in"
+            style={{
             ...theme.uploadLabel,
             marginTop: "30px",
             fontSize: "1.1rem",
             cursor: "pointer",
-          }}
-          onClick={() => console.log("Merge clicked!")}
+            }}
+            onClick={handleMerge}
         >
-          🚀 Merge!
+            🚀 Merge!
         </button>
-      )}
+        )}
 
       <style>
         {`

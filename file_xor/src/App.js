@@ -9,6 +9,7 @@ import Login from "./auth/Login.js"
 import CreateAccount from "./auth/CreateAccount.js"
 import MergeHistory from './merges/Merges.js';
 import ProtectedRoute from './auth/ProtectedRoute.js';
+import MergePage from './pages/MergePage.jsx';
 
 function App() {
   const Router = HashRouter;
@@ -31,7 +32,11 @@ function App() {
           </ProtectedRoute>
         } />
           
-          <Route path="/merge" element={<MergePage />} />
+          <Route path="/merge" element={
+          <ProtectedRoute>
+            <MergePage />
+          </ProtectedRoute>
+        } />
 
 
       </Routes>
