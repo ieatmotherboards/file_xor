@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
 import { diff_match_patch } from "diff-match-patch";
+import ShowError from '../utils/ShowError';
 import { useNavigate } from "react-router-dom";
 
 export default function Home() {
 
     const navigate = useNavigate();
+    const [errorMessage, setErrorMessage] = useState('');
+
     
 
     const handleMerge = async () => {
         try {
             if (!fileNames[0] || !fileNames[1]) {
-                alert("Please upload two files first!");
+                setErrorMessage("Please upload two files first!");
                 return;
             }
 
@@ -29,14 +32,14 @@ export default function Home() {
             if (!res.ok) {
                 const text = await res.text();
                 console.error("Backend error:", text);
-                alert("Error computing differences"); // CHANGE ME THREE
+                setErrorMessage("Error computing differences"); // CHANGE ME THREE
                 return;
             }
 
             const data = await res.json();
 
             if (!data.blocks) {
-                alert("Error computing differences (no blocks returned)"); // CHANGE ME LATER
+                setErrorMessage("Error computing differences (no blocks returned)"); // CHANGE ME LATER
                 return;
             }
 
@@ -51,7 +54,7 @@ export default function Home() {
             navigate("/merge");
             } catch (error) {
                 console.error("Failed to compute diff:", error);
-                alert("Error processing files");
+                setErrorMessage("Error processing files");
             }
         };
 
@@ -188,8 +191,14 @@ export default function Home() {
   return (
     <div style={theme.page}>
       {/* Centered header */}
+      {errorMessage && (
+              <ShowError
+                message={errorMessage}
+                onClose={() => setErrorMessage('')}
+              />
+            )}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
-        <h1 style={theme.title}>FILE_XOR</h1>
+        <h1 style={theme.title}>file_xor</h1>
         <button style={theme.toggleButton} className="upload-button bounce-in" onClick={() => setDarkMode(!darkMode)}>
           {darkMode ? "☀️ Light Mode":"🌙 Dark Mode"}
         </button>
@@ -247,6 +256,7 @@ export default function Home() {
           className="view-diff-button bounce-in"
           style={{
             ...theme.uploadLabel,
+            fontFamily: 'JetBrains Mono, monospace',
             fontSize: "1.1rem",
             marginBottom: "20px",
             cursor: "pointer",
@@ -286,6 +296,7 @@ export default function Home() {
             style={{
             ...theme.uploadLabel,
             marginTop: "30px",
+            fontFamily: 'JetBrains Mono, monospace',
             fontSize: "1.1rem",
             cursor: "pointer",
             }}
@@ -334,16 +345,6 @@ export default function Home() {
             top: 0;
             transition: transform 2s ease-in-out, opacity 0.6s ease-in-out;
           }
-          .file-icon.left {
-            left: 0;
-            transform: translateX(-200px);
-            animation: slideInLeft 2s forwards;
-          }
-          .file-icon.right {
-            right: 0;
-            transform: translateX(200px);
-            animation: slideInRight 2s forwards;
-          }
           .xor-logo {
             position: absolute;
             width: 60px;
@@ -371,6 +372,7 @@ export default function Home() {
 
             .diff-table th:first-child,
             .diff-table td:first-child {
+            
             width: 50px; /* fixed width for line numbers */
             }
 
@@ -419,9 +421,10 @@ const lightTheme = {
     background: "linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)",
     color: "#111827",
   },
-  title: { fontSize: "2.2rem", fontWeight: 600, marginBottom: "10px" },
-  subtitle: { marginBottom: "40px", color: "#64748b" },
+  title: {fontFamily: 'JetBrains Mono, monospace', fontSize: "2.2rem", fontWeight: 600, marginBottom: "10px" },
+  subtitle: { fontFamily: 'JetBrains Mono, monospace', marginBottom: "40px", color: "#64748b" },
   toggleButton: {
+    fontFamily: 'JetBrains Mono, monospace',
     background: "#3b82f6",
     color: "white",
     border: "none",
@@ -431,6 +434,7 @@ const lightTheme = {
     fontWeight: 500,
   },
   uploadContainer: {
+    fontFamily: 'JetBrains Mono, monospace',
     display: "flex",
     maxWidth: "900px",
     width: "100%",
@@ -460,6 +464,7 @@ const lightTheme = {
   fileInput: { display: "none" },
   fileName: { marginTop: "15px", color: "#374151" },
   previewContainer: {
+    fontFamily: 'JetBrains Mono, monospace',
     display: "flex",
     maxWidth: "900px",
     width: "100%",

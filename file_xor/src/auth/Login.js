@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ShowError from '../utils/ShowError';
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
@@ -7,6 +8,7 @@ export default function Login() {
 
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
     
   const [watermarkProgress, setWatermarkProgress] = useState(0);
   const canvasRef = useRef(null);
@@ -25,10 +27,12 @@ export default function Login() {
                 console.log('success!');
                 navigate('/');
             } else {
-                alert('Invalid credentials'); // CHANGE ME LATER TOO
+                // alert('Invalid credentials'); // CHANGE ME LATER TOO
+                setErrorMessage("Invalid Credentials")
                 console.log(data.error);  
             }
         }catch{
+            setErrorMessage('Login Unsuccessful');
             console.error("error hitting login endpoint");
         }
     }
@@ -307,15 +311,23 @@ export default function Login() {
     cursor:"pointer"
   };
 
-  return (
+    return (
     <div style={containerStyle}>
       <canvas ref={canvasRef} style={canvasStyle} />
       <div style={vignetteStyle1}></div>
       <div style={vignetteStyle2}></div>
 
+      
+      {errorMessage && (
+        <ShowError
+          message={errorMessage}
+          onClose={() => setErrorMessage('')}
+        />
+      )}
+
       <div style={formContainerStyle}>
         <h1 style={titleStyle}>login</h1>
-        
+
         <form>
           <label style={labelStyle}>
             username
@@ -323,8 +335,6 @@ export default function Login() {
               type="text" 
               style={inputStyle}
               value={username}
-              onFocus={(e) => e.target.style.borderColor = '#9CDCFE'}
-              onBlur={(e) => e.target.style.borderColor = '#4B5563'}
               onChange={(e) => setUsername(e.target.value)}
             />
           </label>
@@ -335,8 +345,6 @@ export default function Login() {
               type="password" 
               style={inputStyle}
               value={password}
-              onFocus={(e) => e.target.style.borderColor = '#9CDCFE'}
-              onBlur={(e) => e.target.style.borderColor = '#4B5563'}
               onChange={(e) => setPassword(e.target.value)}
             />
           </label>
@@ -344,11 +352,9 @@ export default function Login() {
           <button
             type="submit"
             style={buttonStyle}
-            onMouseEnter={(e) => e.target.style.transform = 'scale(1.02)'}
-            onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
-            onClick ={(e) => {
-                e.preventDefault();
-                resolveLogin();
+            onClick={(e) => {
+              e.preventDefault();
+              resolveLogin();
             }}
           >
             Login
@@ -356,7 +362,7 @@ export default function Login() {
         </form>
 
         <a onClick={() => navigate("/create-account")} style={linkStyle}>
-          don't have an account? <span style={{color: '#9CDCFE'}}>sign up</span>
+          don't have an account? <span style={{ color: '#9CDCFE' }}>sign up</span>
         </a>
       </div>
     </div>

@@ -1,10 +1,11 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, unset_jwt_cookies, jwt_required, get_jwt_identity
-from api.models import db, User, Record
+from api.models import db
 from api.auth import create_new_account, login_user
 from api.compute_diff import compute_diff
 from api.getmerges import get_merges
+from api.savemerge import savemerge
 
 app = Flask(__name__)
 
@@ -69,6 +70,11 @@ def verify_token():
 @jwt_required()
 def return_merges():
     return get_merges()
+
+@app.route("/save_merge", methods=["POST"])
+@jwt_required()
+def savemerge():
+    return savemerge()
 
     
 

@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Highlight, themes } from "prism-react-renderer";
+import ShowError from '../utils/ShowError';
+import { useNavigate } from "react-router-dom";
+
+
 
 /* ---------- Mock utilities ---------- */
 function initializeMergedState(originalA) {
@@ -118,6 +122,83 @@ const focusLift = { z: 24, scale: 1.03, transition: { duration: 0.22 } };
 
 /* ---------- main ---------- */
 export default function MergePage() {
+  const [errorMessage, setErrorMessage] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+  
+  const navbarStyle = {
+    height: '48px',
+    background: '#2c2c2c',
+    borderBottom: '1px solid #3a3a3a',
+    display: 'flex',
+    alignItems: 'center',
+    padding: '0 1.5rem',
+    fontWeight: '600',
+    color: '#9cdcfe',
+    letterSpacing: '0.5px',
+    fontSize: '1.1rem',
+    position: 'relative',
+    zIndex: 101,
+  };
+
+  const hamburgerStyle = {
+    cursor: 'pointer',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+    marginRight: '1rem',
+  };
+
+  const hamburgerLineStyle = {
+    width: '24px',
+    height: '3px',
+    backgroundColor: '#9cdcfe',
+    borderRadius: '2px',
+    transition: 'all 0.3s ease',
+  };
+
+    const titleStyle = {
+    fontSize: '1.1rem',
+    fontWeight: '600',
+    color: '#9cdcfe',
+  };
+
+  const sidebarStyle = {
+    position: 'fixed',
+    top: 0,
+    left: sidebarOpen ? 0 : '-400px',
+    width: '300px',
+    height: '100vh',
+    backgroundColor: '#252526',
+    borderRight: '1px solid #3a3a3a',
+    transition: 'left 0.3s ease',
+    zIndex: 100,
+    padding: '80px 1.5rem 1.5rem',
+    boxShadow: sidebarOpen ? '4px 0 12px rgba(0, 0, 0, 0.5)' : 'none',
+  };
+
+  const overlayStyle = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: sidebarOpen ? 'block' : 'none',
+    zIndex: 99,
+  };
+
+  const sidebarLinkStyle = {
+    display: 'block',
+    padding: '12px 16px',
+    color: '#dcdcdc',
+    textDecoration: 'none',
+    borderRadius: '6px',
+    marginBottom: '8px',
+    transition: 'background 0.2s ease',
+    cursor: 'pointer',
+  };
+  
   useEffect(() => {
     const styleId = 'merge-engine-styles';
     if (!document.getElementById(styleId)) {
@@ -348,6 +429,12 @@ export default function MergePage() {
           transition: all 0.2s ease-in-out;
         }
 
+        .undo-btn {
+
+        }
+
+        
+
         .save-merge-btn:hover {
           transform: scale(1.05);
           background: #2563eb;
@@ -468,10 +555,10 @@ const originalIndexMap = useMemo(
       throw new Error(`Save failed: ${res.statusText}`);
     }
 
-    alert("✅ Merge progress saved successfully!");
+    setErrorMessage("✅ Merge progress saved successfully!");
   } catch (err) {
     console.error("Error saving merge:", err);
-    alert("❌ Failed to save merge progress.");
+    setErrorMessage("❌ Failed to save merge progress.");
   }
 };
 
@@ -532,8 +619,56 @@ const originalIndexMap = useMemo(
 
   return (
     <div className="merge-root" onMouseDown={clearFocus}>
-      <header className="merge-navbar">FILE XOR</header>
+      {/* <header className="merge-navbar">FILE XOR</header> */}
+      {/* Navbar */}
+      <nav style={navbarStyle}>
+        <div
+          style={hamburgerStyle}
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+        >
+          <div style={hamburgerLineStyle}></div>
+          <div style={hamburgerLineStyle}></div>
+          <div style={hamburgerLineStyle}></div>
+        </div>
+        <span style={titleStyle}>file_xor</span>
+      </nav>
 
+      {/* Overlay */}
+      <div style={overlayStyle} onClick={() => setSidebarOpen(false)}></div>
+
+      {/* Sidebar */}
+      <div style={sidebarStyle}>
+        <div
+          style={sidebarLinkStyle}
+          onMouseEnter={(e) => (e.target.style.backgroundColor = '#2d2d2d')}
+          onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
+          onClick={() => window.location.href = '/'}
+        >
+          Home
+        </div>
+        {/* <div
+          style={sidebarLinkStyle}
+          onMouseEnter={(e) => (e.target.style.backgroundColor = '#2d2d2d')}
+          onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
+          onClick={() => window.location.href = '/history'}
+        >
+          Merge History
+        </div> */}
+        <div
+          style={sidebarLinkStyle}
+          onMouseEnter={(e) => (e.target.style.backgroundColor = '#2d2d2d')}
+          onMouseLeave={(e) => (e.target.style.backgroundColor = 'transparent')}
+          onClick={() => navigate("/landing")}
+        >
+          Logout
+        </div>
+      </div>
+      {errorMessage && (
+                    <ShowError
+                      message={errorMessage}
+                      onClose={() => setErrorMessage('')}
+                    />
+            )}
       <div className="decided-wrap">
         <button
           className="decided-toggle"

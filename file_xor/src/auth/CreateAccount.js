@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from "react-router-dom";
+import ShowError from '../utils/ShowError';
+
 
 
 export default function CreateAccount() {
 
     const navigate = useNavigate();
+
+    const [errorMessage, setErrorMessage] = useState('');
+    
     
     const [watermarkProgress, setWatermarkProgress] = useState(0);
     const canvasRef = useRef(null);
@@ -14,7 +19,7 @@ export default function CreateAccount() {
 
     const resolveCreateAccount = async () => {
         if (password !== password2){
-            alert("passwords do not match twin"); // CHANGE ME LATER
+            setErrorMessage("passwords do not match twin"); // CHANGE ME LATER
         }
 
         try {
@@ -30,7 +35,7 @@ export default function CreateAccount() {
                 console.log('success!');
                 navigate('/login');
             } else {
-                alert('Invalid credentials'); // CHANGE ME LATER TOO
+                setErrorMessage('Invalid credentials'); // CHANGE ME LATER TOO
                 console.log(data.error);  
             }
         } catch{
@@ -317,6 +322,13 @@ export default function CreateAccount() {
       <canvas ref={canvasRef} style={canvasStyle} />
       <div style={vignetteStyle1}></div>
       <div style={vignetteStyle2}></div>
+
+      {errorMessage && (
+              <ShowError
+                message={errorMessage}
+                onClose={() => setErrorMessage('')}
+              />
+      )}
 
       <div style={formContainerStyle}>
         <h1 style={titleStyle}>create account</h1>

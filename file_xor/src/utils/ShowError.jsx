@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import "./ShowError.css";
+import "../styles/ShowError.css";
 
 /**
  * ShowError - Themed replacement for native alert()
