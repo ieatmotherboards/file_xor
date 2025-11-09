@@ -339,3 +339,34 @@ pre {
 .merge-container {
   position: relative;
 }
+
+/* Accent color (same as FILE XOR title) */
+:root {
+  --accent-blue: #9cdcfe;
+}
+
+/* Consistent accent use */
+.decided-toggle, .decided-tag {
+  color: var(--accent-blue);
+}
+
+/* Prevent spacing when no decided items */
+.decided-panel:empty {
+  display: none;
+}
+
+/* Undo button */
+.undo-btn {
+  background: #2e2e2e;
+  color: #ddd;
+  border: 1px solid #3d3d3d;
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin-left: auto;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.undo-btn:hover {
+  background: #3d3d3d;
+}

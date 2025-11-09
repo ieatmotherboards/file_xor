@@ -30,21 +30,57 @@ function countLinesUntil(text, index) {
   return text.slice(0, index).split("\n").length;
 }
 
-function CodeBlock({ code, language, startLine }) {
+// pages/MergePage.jsx (or a separate component file)
+function CodeBlock({
+  code,
+  language,
+  startLine = 1,
+  withLineWrappers = false,          // NEW
+  anchorLines = new Map(),           // NEW: Map<blockId, lineNumber>
+}) {
+  // Build quick reverse map line -> [blockIds...]
+  const lineToAnchors = useMemo(() => {
+    const m = new Map();
+    anchorLines.forEach((ln, blockId) => {
+      if (!m.has(ln)) m.set(ln, []);
+      m.get(ln).push(blockId);
+    });
+    return m;
+  }, [anchorLines]);
+
   return (
     <Highlight code={code ?? ""} language={language} theme={themes.vsDark}>
       {({ style, tokens, getLineProps, getTokenProps }) => (
         <pre style={{ ...style, background: "transparent", margin: 0 }}>
-          {tokens.map((line, i) => (
-            <div key={i} {...getLineProps({ line, key: i })}>
-              <span className="line-number">{(startLine ?? 1) + i}</span>
-              <span className="code-line">
-                {line.map((token, key) => (
-                  <span key={key} {...getTokenProps({ token, key })} />
-                ))}
-              </span>
-            </div>
-          ))}
+          {tokens.map((line, i) => {
+            const displayLine = startLine + i;
+
+            // Render a wrapper div per line so we can measure positions
+            const lineProps = withLineWrappers
+              ? { "data-line": displayLine }
+              : {};
+
+            return (
+              <div key={i} {...getLineProps({ line, key: i })} {...lineProps}>
+                {/* Optional: invisible anchors inserted BEFORE the line */}
+                {withLineWrappers && lineToAnchors.has(displayLine) &&
+                  lineToAnchors.get(displayLine).map((blockId) => (
+                    <span
+                      key={`anchor-${blockId}`}
+                      data-anchor-for={blockId}
+                      style={{ position: "absolute", height: 0, width: 0 }}
+                    />
+                  ))}
+
+                <span className="line-number">{displayLine}</span>
+                <span className="code-line">
+                  {line.map((token, key) => (
+                    <span key={key} {...getTokenProps({ token, key })} />
+                  ))}
+                </span>
+              </div>
+            );
+          })}
         </pre>
       )}
     </Highlight>
@@ -58,27 +94,158 @@ const focusLift = { z: 24, scale: 1.03, transition: { duration: 0.22 } };
 /* ---------- main ---------- */
 export default function MergePage() {
   const location = useLocation();
-  const {
-    fileAName,
-    fileBName,
-    contentA,
-    contentB,
-    blocks: initialBlocks,
-  } = location.state || {
-    fileAName: "a.py",
-    fileBName: "b.py",
-    contentA: "print('Hello from file A')\nprint('Goodbye A')\n",
-    contentB: "print('Hello from file B')\nprint('Goodbye B!')\n",
+  const { fileAName, fileBName, contentA, contentB, blocks: initialBlocks } =
+  location.state || {
+    fileAName: "fileA.py",
+    fileBName: "fileB.py",
+    contentA: `# fileA.py - Base version
+
+def greet(name):
+    print(f"Hello, {name}!")
+
+def add(a, b):
+    return a + b
+
+def multiply(a, b):
+    return a * b
+
+def divide(a, b):
+    if b == 0:
+        print("Cannot divide by zero!")
+        return None
+    return a / b
+
+def factorial(n):
+    if n == 0:
+        return 1
+    result = 1
+    for i in range(1, n + 1):
+        result *= i
+    return result
+
+def summarize(values):
+    total = sum(values)
+    avg = total / len(values)
+    print(f"Sum: {total}, Average: {avg}")
+
+def main():
+    greet("Alice")
+    print(add(5, 10))
+    print(multiply(3, 7))
+    summarize([2, 4, 6, 8])
+
+if __name__ == "__main__":
+    main()
+`,
+
+    contentB: `# fileB.py - Modified version
+
+def greet(name, excited=False):
+    message = f"Hello, {name}"
+    if excited:
+        message += "!!!"
+    print(message)
+
+def add(a, b):
+    # Added type checking
+    if not isinstance(a, (int, float)) or not isinstance(b, (int, float)):
+        raise TypeError("add() arguments must be numbers")
+    return a + b
+
+def multiply(a, b):
+    return a * b
+
+def divide(a, b):
+    try:
+        return a / b
+    except ZeroDivisionError:
+        print("Error: divide by zero")
+        return None
+
+def factorial(n):
+    if n < 0:
+        raise ValueError("n must be non-negative")
+    if n == 0:
+        return 1
+    result = 1
+    for i in range(1, n + 1):
+        result *= i
+    return result
+
+def summarize(values):
+    total = sum(values)
+    avg = total / len(values)
+    print(f"Total={total}, Mean={avg}")
+
+def main():
+    greet("Alice", excited=True)
+    print(add(5, 10))
+    print(multiply(3, 7))
+    summarize([2, 4, 6, 8])
+
+if __name__ == "__main__":
+    main()
+`,
+    // fake diff structure for demo purposes
     blocks: [
       {
-        id: "1",
-        a: { start: 0, end: 26, text: "print('Hello from file A')" },
-        b: { start: 0, end: 26, text: "print('Hello from file B')" },
+        id: "greet-func",
+        a: {
+          start: 22,
+          end: 60,
+          text: `def greet(name):
+    print(f"Hello, {name}!")`,
+        },
+        b: {
+          start: 22,
+          end: 98,
+          text: `def greet(name, excited=False):
+    message = f"Hello, {name}"
+    if excited:
+        message += "!!!"
+    print(message)`,
+        },
       },
       {
-        id: "2",
-        a: { start: 27, end: 44, text: "print('Goodbye A')" },
-        b: { start: 27, end: 45, text: "print('Goodbye B!')" },
+        id: "divide-func",
+        a: {
+          start: 166,
+          end: 226,
+          text: `def divide(a, b):
+    if b == 0:
+        print("Cannot divide by zero!")
+        return None
+    return a / b`,
+        },
+        b: {
+          start: 176,
+          end: 243,
+          text: `def divide(a, b):
+    try:
+        return a / b
+    except ZeroDivisionError:
+        print("Error: divide by zero")
+        return None`,
+        },
+      },
+      {
+        id: "summarize-func",
+        a: {
+          start: 338,
+          end: 389,
+          text: `def summarize(values):
+    total = sum(values)
+    avg = total / len(values)
+    print(f"Sum: {total}, Average: {avg}")`,
+        },
+        b: {
+          start: 345,
+          end: 394,
+          text: `def summarize(values):
+    total = sum(values)
+    avg = total / len(values)
+    print(f"Total={total}, Mean={avg}")`,
+        },
       },
     ],
   };
