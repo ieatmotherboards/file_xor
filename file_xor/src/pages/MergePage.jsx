@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Highlight, themes } from "prism-react-renderer";
 
 /* ---------- Mock utilities ---------- */
 function initializeMergedState(originalA) {
@@ -77,101 +78,44 @@ function countLinesUntil(text, index) {
 }
 
 function CodeBlock({ code, language, startLine = 1 }) {
-  const lines = (code ?? "").split("\n");
-  
-  const highlightPython = (line) => {
-    const keywords = /\b(def|class|import|from|if|elif|else|for|while|return|try|except|raise|with|as|pass|break|continue|yield|lambda|and|or|not|in|is|None|True|False)\b/g;
-    const strings = /(["'`])((?:\\.|(?!\1).)*?)\1/g;
-    const comments = /(#.*$)/g;
-    const functions = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()/g;
-    const numbers = /\b(\d+\.?\d*)\b/g;
-    
-    let highlighted = line;
-    highlighted = highlighted.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    highlighted = highlighted.replace(comments, '<span style="color: #6A9955;">$1</span>');
-    highlighted = highlighted.replace(strings, '<span style="color: #CE9178;">$&</span>');
-    highlighted = highlighted.replace(keywords, '<span style="color: #569CD6;">$&</span>');
-    highlighted = highlighted.replace(functions, '<span style="color: #DCDCAA;">$1</span>');
-    highlighted = highlighted.replace(numbers, '<span style="color: #B5CEA8;">$1</span>');
-    
-    return highlighted;
-  };
-  
-  const highlightJavaScript = (line) => {
-    const keywords = /\b(function|const|let|var|if|else|for|while|return|try|catch|throw|new|this|class|extends|import|export|from|async|await|break|continue|switch|case|default)\b/g;
-    const strings = /(["'`])((?:\\.|(?!\1).)*?)\1/g;
-    const comments = /(\/\/.*$|\/\*[\s\S]*?\*\/)/g;
-    const functions = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()/g;
-    const numbers = /\b(\d+\.?\d*)\b/g;
-    
-    let highlighted = line;
-    highlighted = highlighted.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    highlighted = highlighted.replace(comments, '<span style="color: #6A9955;">$1</span>');
-    highlighted = highlighted.replace(strings, '<span style="color: #CE9178;">$&</span>');
-    highlighted = highlighted.replace(keywords, '<span style="color: #569CD6;">$&</span>');
-    highlighted = highlighted.replace(functions, '<span style="color: #DCDCAA;">$1</span>');
-    highlighted = highlighted.replace(numbers, '<span style="color: #B5CEA8;">$1</span>');
-    
-    return highlighted;
-  };
-  
-  const highlightLine = (line) => {
-    if (language === 'python') {
-      return highlightPython(line);
-    } else if (language === 'javascript' || language === 'typescript') {
-      return highlightJavaScript(line);
-    }
-    return line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  };
-  
   return (
-    <pre style={{ 
-      background: "transparent", 
-      margin: 0,
-      fontSize: "0.85rem",
-      lineHeight: 1.5,
-      fontFamily: "monospace"
-    }}>
-      {lines.map((line, i) => {
-        const displayLine = startLine + i;
-        const highlightedLine = highlightLine(line);
-        
-        return (
-          <div key={i} style={{ display: "flex" }}>
-            <span style={{
-              display: "inline-block",
-              width: "2.5em",
-              userSelect: "none",
-              opacity: 0.4,
-              textAlign: "right",
-              marginRight: "1em",
-              color: "#858585",
-              flexShrink: 0
-            }}>
-              {displayLine}
-            </span>
-            <span 
-              style={{
-                display: "inline-block",
-                color: "#dcdcdc",
-                whiteSpace: "pre",
-                flex: 1
-              }}
-              dangerouslySetInnerHTML={{ __html: highlightedLine || " " }}
-            />
-          </div>
-        );
-      })}
-    </pre>
+    <Highlight code={code ?? ""} language={language} theme={themes.vsDark}>
+      {({ style, tokens, getLineProps, getTokenProps }) => (
+        <pre style={{ ...style, background: "transparent", margin: 0 }}>
+          {tokens.map((line, i) => {
+            const displayLine = startLine + i;
+            return (
+              <div key={i} {...getLineProps({ line, key: i })}>
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: "2.5em",
+                    userSelect: "none",
+                    opacity: 0.4,
+                    textAlign: "right",
+                    marginRight: "1em",
+                    color: "#858585",
+                  }}
+                >
+                  {displayLine}
+                </span>
+                <span className="code-line">
+                  {line.map((token, key) => (
+                    <span key={key} {...getTokenProps({ token, key })} />
+                  ))}
+                </span>
+              </div>
+            );
+          })}
+        </pre>
+      )}
+    </Highlight>
   );
 }
 
 /* ---------- animation presets ---------- */
-const focusLift = { 
-  scale: 1.05, 
-  boxShadow: "0 8px 24px rgba(10, 162, 255, 0.4)",
-  transition: { duration: 0.3, ease: "easeOut" } 
-};
+const focusLift = { z: 24, scale: 1.03, transition: { duration: 0.22 } };
+
 
 /* ---------- main ---------- */
 export default function MergePage() {
@@ -379,131 +323,20 @@ export default function MergePage() {
       document.head.appendChild(style);
     }
   }, []);
+  
+const fileAName = localStorage.getItem("fileAName") || "fileA";
+const fileBName = localStorage.getItem("fileBName") || "fileB";
 
-  const fileAName = "fileA.py";
-  const fileBName = "fileB.py";
-  const contentA = `# fileA.py - Base version
+const contentA = localStorage.getItem("fileA") || "";
+const contentB = localStorage.getItem("fileB") || "";
+const initialBlocks = JSON.parse(localStorage.getItem("mergeBlocks") || "[]");
 
-def greet(name):
-    print(f"Hello, {name}!")
-
-def add(a, b):
-    return a + b
-
-def multiply(a, b):
-    return a * b
-
-def divide(a, b):
-    if b == 0:
-        print("Cannot divide by zero!")
-        return None
-    return a / b
-
-def factorial(n):
-    if n == 0:
-        return 1
-    result = 1
-    for i in range(1, n + 1):
-        result *= i
-    return result
-
-def summarize(values):
-    total = sum(values)
-    avg = total / len(values)
-    print(f"Sum: {total}, Average: {avg}")
-
-def main():
-    greet("Alice")
-    print(add(5, 10))
-    print(multiply(3, 7))
-    summarize([2, 4, 6, 8])
-
-if __name__ == "__main__":
-    main()
-`;
-
-  const contentB = `# fileB.py - Modified version
-
-def greet(name, excited=False):
-    message = f"Hello, {name}"
-    if excited:
-        message += "!!!"
-    print(message)
-
-def add(a, b):
-    # Added type checking
-    if not isinstance(a, (int, float)) or not isinstance(b, (int, float)):
-        raise TypeError("add() arguments must be numbers")
-    return a + b
-
-def multiply(a, b):
-    return a * b
-
-def divide(a, b):
-    try:
-        return a / b
-    except ZeroDivisionError:
-        print("Error: divide by zero")
-        return None
-
-def factorial(n):
-    if n < 0:
-        raise ValueError("n must be non-negative")
-    if n == 0:
-        return 1
-    result = 1
-    for i in range(1, n + 1):
-        result *= i
-    return result
-
-def summarize(values):
-    total = sum(values)
-    avg = total / len(values)
-    print(f"Total={total}, Mean={avg}")
-
-def main():
-    greet("Alice", excited=True)
-    print(add(5, 10))
-    print(multiply(3, 7))
-    summarize([2, 4, 6, 8])
-
-if __name__ == "__main__":
-    main()
-`;
-
-  const initialBlocks = [
-    {
-      id: "greet-func",
-      a: { start: 28, end: 66, text: `def greet(name):\n    print(f"Hello, {name}!")` },
-      b: { start: 28, end: 104, text: `def greet(name, excited=False):\n    message = f"Hello, {name}"\n    if excited:\n        message += "!!!"\n    print(message)` },
-    },
-    {
-      id: "add-func",
-      a: { start: 68, end: 96, text: `def add(a, b):\n    return a + b` },
-      b: { start: 106, end: 245, text: `def add(a, b):\n    # Added type checking\n    if not isinstance(a, (int, float)) or not isinstance(b, (int, float)):\n        raise TypeError("add() arguments must be numbers")\n    return a + b` },
-    },
-    {
-      id: "divide-func",
-      a: { start: 120, end: 194, text: `def divide(a, b):\n    if b == 0:\n        print("Cannot divide by zero!")\n        return None\n    return a / b` },
-      b: { start: 269, end: 353, text: `def divide(a, b):\n    try:\n        return a / b\n    except ZeroDivisionError:\n        print("Error: divide by zero")\n        return None` },
-    },
-    {
-      id: "factorial-func",
-      a: { start: 196, end: 283, text: `def factorial(n):\n    if n == 0:\n        return 1\n    result = 1\n    for i in range(1, n + 1):\n        result *= i\n    return result` },
-      b: { start: 355, end: 466, text: `def factorial(n):\n    if n < 0:\n        raise ValueError("n must be non-negative")\n    if n == 0:\n        return 1\n    result = 1\n    for i in range(1, n + 1):\n        result *= i\n    return result` },
-    },
-    {
-      id: "summarize-func",
-      a: { start: 285, end: 372, text: `def summarize(values):\n    total = sum(values)\n    avg = total / len(values)\n    print(f"Sum: {total}, Average: {avg}")` },
-      b: { start: 468, end: 555, text: `def summarize(values):\n    total = sum(values)\n    avg = total / len(values)\n    print(f"Total={total}, Mean={avg}")` },
-    },
-  ];
 
   const language = detectLanguage(fileAName || fileBName);
 
   const [engine, setEngine] = useState(() => initializeMergedState(contentA || ""));
   const [activeBlocks, setActiveBlocks] = useState(initialBlocks);
-  const [decidedBlocks, setDecidedBlocks] = useState([]);
+  const [decidedBlocks, setDecidedBlocks] = useState([]); // [{block, chosen}]
   const [decidedOpen, setDecidedOpen] = useState(true);
   const [focusedId, setFocusedId] = useState(null);
   const [barSelection, setBarSelection] = useState(null);
@@ -512,6 +345,12 @@ if __name__ == "__main__":
   const mergePaneRef = useRef(null);
   const chunkRefsLeft = useRef(new Map());
   const chunkRefsRight = useRef(new Map());
+
+// original index map so undo restores exact order
+const originalIndexMap = useMemo(
+  () => new Map(initialBlocks.map((b, i) => [b.id, i])),
+  [initialBlocks]
+);
 
   useEffect(() => {
     setEngine((prev) =>
@@ -570,6 +409,40 @@ if __name__ == "__main__":
     }, 800);
   };
 
+  function handleUndo(blockId) {
+  // 1) pull the decided entry
+  const decided = decidedBlocks.find((d) => d.block.id === blockId);
+  if (!decided) return;
+
+  // 2) remove from decided
+  setDecidedBlocks((prev) => prev.filter((d) => d.block.id !== blockId));
+
+  // 3) reinsert into active at original index
+  setActiveBlocks((prev) => {
+    const idx = originalIndexMap.get(blockId);
+    const next = [...prev];
+    const insertAt = Number.isInteger(idx) ? idx : prev.length;
+    next.splice(insertAt, 0, decided.block);
+    return next;
+  });
+
+  // 4) remove the choice from engine + rebuild merged text
+  setEngine((prev) => {
+    const newChoices = new Map(prev.choices);
+    newChoices.delete(blockId);
+    return {
+      ...prev,
+      choices: newChoices,
+      mergedText: computeMergedFromChoices(
+        prev.originalA,
+        initialBlocks, // keep deterministic original ordering
+        newChoices
+      ),
+    };
+  });
+}
+
+
   const setLeftRef = (id) => (el) => {
     if (!el) chunkRefsLeft.current.delete(id);
     else chunkRefsLeft.current.set(id, el);
@@ -590,6 +463,7 @@ if __name__ == "__main__":
         >
           {decidedOpen ? "▼" : "▶"} Merged Changes ({decidedBlocks.length})
         </button>
+
         <AnimatePresence initial={false}>
           {decidedOpen && decidedBlocks.length > 0 && (
             <motion.div
@@ -607,6 +481,9 @@ if __name__ == "__main__":
                     {(chosen === "left" ? block.a.text : block.b.text).slice(0, 120)}
                     {((chosen === "left" ? block.a.text : block.b.text) || "").length > 120 && "…"}
                   </span>
+                  <button className="undo-btn" onClick={() => handleUndo(block.id)}>
+                    ⟳ Undo
+                  </button>
                 </div>
               ))}
             </motion.div>
@@ -614,6 +491,7 @@ if __name__ == "__main__":
         </AnimatePresence>
       </div>
 
+      
       <div className="merge-container perspective">
         <div className="merge-pane left-pane">
           <AnimatePresence mode="popLayout">
