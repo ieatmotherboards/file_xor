@@ -1,13 +1,17 @@
-import { HashRouter as Router, Routes, Route } from "react-router-dom";
+import React from 'react';
+import logo from './logo.svg';
+import './App.css';
+import { HashRouter, Routes, Route } from 'react-router-dom';
+import Home from "./home/Home.js"
 import MergePage from "./pages/MergePage";
-//import DiffPage from "./pages/DiffPage"; // (or whatever your diff screen is called)
+
 
 function App() {
+  const Router = HashRouter;
   return (
     <Router>
       <Routes>
-        {/* Landing / Diff page */}
-        <Route path="/" element={<MergePage />} />
+        <Route path ="/" element ={<Home />} />
 
         {/* Merge page */}
         <Route path="/merge" element={<MergePage />} />
