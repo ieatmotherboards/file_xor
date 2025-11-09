@@ -346,7 +346,10 @@ export default function Login() {
             style={buttonStyle}
             onMouseEnter={(e) => e.target.style.transform = 'scale(1.02)'}
             onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
-            onClick ={() => resolveLogin()}
+            onClick ={(e) => {
+                e.preventDefault();
+                resolveLogin();
+            }}
           >
             Login
           </button>
