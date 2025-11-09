@@ -27,7 +27,6 @@ def login_user(username, password):
         return jsonify({"error": "Invalid credentials"}), 401
 
     access_token = create_access_token(identity=user.username, expires_delta=timedelta(hours=1))
-
     response = jsonify({"success": True, "username": user.username})
     set_access_cookies(response, access_token)
-    return response, 200
+    return response

@@ -19,8 +19,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = "super-secret-key"  # change in production
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_COOKIE_SECURE"] = False  # False for development (HTTP), True for production (HTTPS)
-app.config["JWT_COOKIE_SAMESITE"] = "None"  # Allows cross-origin cookie sending
+app.config["JWT_COOKIE_SAMESITE"] = "Lax" 
 app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False
 
 # --- INIT ---
 db.init_app(app)
@@ -71,7 +72,7 @@ def return_merges():
 
     
 
-@app.route("/diff", methods=["POST"])
+@app.route("/compute_diff", methods=["POST"])
 def diff_files():
     file1 = request.files.get("file1")
     file2 = request.files.get("file2")

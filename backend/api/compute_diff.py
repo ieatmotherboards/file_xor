@@ -1,44 +1,41 @@
-from diff_match_patch import diff_match_patch
+from difflib import SequenceMatcher
 
 def compute_diff(text1: str, text2: str):
-    dmp = diff_match_patch()
-    diffs = dmp.diff_main(text1, text2)
-    dmp.diff_cleanupSemantic(diffs)
+    # Split into lines for semantic comparison
+    lines1 = text1.splitlines(keepends=True)
+    lines2 = text2.splitlines(keepends=True)
 
+    matcher = SequenceMatcher(None, lines1, lines2)
     blocks = []
-    idx1 = 0
-    idx2 = 0
     block_id = 0
 
-    for op, data in diffs:
-        length = len(data)
-
-        if op == dmp.DIFF_EQUAL:
-            idx1 += length
-            idx2 += length
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        # Skip identical regions
+        if tag == "equal":
             continue
 
-        block = {
+        # Compute the changed sections
+        a_text = "".join(lines1[i1:i2])
+        b_text = "".join(lines2[j1:j2])
+
+        # Skip purely whitespace or empty changes
+        if not a_text.strip() and not b_text.strip():
+            continue
+
+        blocks.append({
             "id": f"block_{block_id}",
-            "kind": "insert" if op == dmp.DIFF_INSERT else "delete" if op == dmp.DIFF_DELETE else "replace",
+            "kind": tag,  # 'replace', 'delete', 'insert'
             "a": {
-                "start": idx1,
-                "end": idx1 + (length if op != dmp.DIFF_INSERT else 0),
-                "text": data if op != dmp.DIFF_INSERT else ""
+                "start": sum(len(x) for x in lines1[:i1]),
+                "end": sum(len(x) for x in lines1[:i2]),
+                "text": a_text,
             },
             "b": {
-                "start": idx2,
-                "end": idx2 + (length if op != dmp.DIFF_DELETE else 0),
-                "text": data if op != dmp.DIFF_DELETE else ""
-            }
-        }
-
-        if op != dmp.DIFF_INSERT:
-            idx1 += length
-        if op != dmp.DIFF_DELETE:
-            idx2 += length
-
-        blocks.append(block)
+                "start": sum(len(x) for x in lines2[:j1]),
+                "end": sum(len(x) for x in lines2[:j2]),
+                "text": b_text,
+            },
+        })
         block_id += 1
 
     return {"blocks": blocks}
