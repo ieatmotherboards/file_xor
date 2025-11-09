@@ -398,3 +398,36 @@ pre {
 .fly-clone * {
   user-select: none;
 }
+
+.save-merge-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-top: 1.2rem;
+  margin-bottom: 0.8rem;
+}
+
+.save-merge-btn {
+  background: #3b82f6;              /* FILE XOR blue */
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  font-family: "Inter", sans-serif; /* same font as FILE XOR */
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(59,130,246,0.25);
+  transition: all 0.2s ease-in-out;
+}
+
+.save-merge-btn:hover {
+  transform: scale(1.05);
+  background: #2563eb;              /* slightly darker hover shade */
+}
+
+.save-merge-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 6px rgba(59,130,246,0.2);
+}

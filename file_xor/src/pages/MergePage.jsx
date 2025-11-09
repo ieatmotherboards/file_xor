@@ -116,7 +116,6 @@ function CodeBlock({ code, language, startLine = 1 }) {
 /* ---------- animation presets ---------- */
 const focusLift = { z: 24, scale: 1.03, transition: { duration: 0.22 } };
 
-
 /* ---------- main ---------- */
 export default function MergePage() {
   useEffect(() => {
@@ -269,12 +268,13 @@ export default function MergePage() {
         
         .decided-toggle {
           background: #2c2c2c;
-          color: #dcdcdc;
+          color: #9cdcfe;
           border: 1px solid #3a3a3a;
           border-radius: 6px;
           padding: 0.35rem 0.6rem;
           cursor: pointer;
           font-size: 0.9rem;
+          font-family: "JetBrains Mono", "Consolas", monospace;
         }
         
         .decided-panel {
@@ -319,11 +319,49 @@ export default function MergePage() {
           background: #303030;
           box-shadow: 0 10px 24px rgba(0,0,0,0.45);
         }
+
+        /* ---------- SAVE MERGE BUTTON (added) ---------- */
+        .save-merge-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 100%;
+          padding: 1rem 0 1.2rem;
+          background: transparent;
+          position: relative;
+          z-index: 5;
+          font-family: "JetBrains Mono", "Consolas", monospace;
+        }
+
+        .save-merge-btn {
+          background: #2c2c2c;
+          color: #9cdcfe;
+          border: none;
+          border-radius: 8px;
+          padding: 0.6rem 1.2rem;
+          font-family: "Inter", sans-serif;
+          font-weight: 500;
+          font-size: 0.9rem;
+          font-family: "JetBrains Mono", "Consolas", monospace;
+          cursor: pointer;
+
+          transition: all 0.2s ease-in-out;
+        }
+
+        .save-merge-btn:hover {
+          transform: scale(1.05);
+          background: #2563eb;
+        }
+
+        .save-merge-btn:active {
+          transform: scale(0.97);
+          box-shadow: 0 2px 6px rgba(59,130,246,0.2);
+        }
       `;
       document.head.appendChild(style);
     }
   }, []);
-  
+
 const fileAName = localStorage.getItem("fileAName") || "fileA";
 const fileBName = localStorage.getItem("fileBName") || "fileB";
 
@@ -408,6 +446,35 @@ const originalIndexMap = useMemo(
       setFocusedId(null);
     }, 800);
   };
+
+  const handleSaveMerge = async () => {
+  try {
+    const payload = {
+      fileA: contentA,
+      fileB: contentB,
+      acceptedMerges: decidedBlocks.map(({ block, chosen }) => ({
+        blockId: block.id,
+        side: chosen,
+      })),
+    };
+
+    const res = await fetch("/save_merge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Save failed: ${res.statusText}`);
+    }
+
+    alert("✅ Merge progress saved successfully!");
+  } catch (err) {
+    console.error("Error saving merge:", err);
+    alert("❌ Failed to save merge progress.");
+  }
+};
+
 
   function handleUndo(blockId) {
   // 1) pull the decided entry
@@ -591,6 +658,13 @@ const originalIndexMap = useMemo(
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+
+      {/* Added: centered save button under the middle panel */}
+      <div className="save-merge-container">
+        <button className="save-merge-btn" onClick={handleSaveMerge}>
+          Save Merge Progress
+        </button>
       </div>
 
       <AnimatePresence>
